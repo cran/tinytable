@@ -1,6 +1,8 @@
 #' Internal styling function
 #'
 #' @inheritParams style_tt
+#' @keywords internal
+#' @noRd
 style_bootstrap <- function(x,
                             i = NULL,
                             j = NULL,
@@ -14,11 +16,15 @@ style_bootstrap <- function(x,
                             fontsize = NULL,
                             width = NULL,
                             align = NULL,
+                            line = NULL,
+                            line_color = "black",
+                            line_width = .1,
                             colspan = NULL,
                             indent = 0,
-                            bootstrap_class = "table",
+                            bootstrap_class = NULL,
                             bootstrap_css = NULL,
-                            bootstrap_css_rule = NULL) {
+                            bootstrap_css_rule = NULL,
+                            ...) {
 
 
   if (meta(x, "output") != "html") return(x)
@@ -94,6 +100,14 @@ style_bootstrap <- function(x,
     settings$bootstrap <- paste(settings$bootstrap, sprintf("padding-left: %sem;", indent), sep = "")
   }
 
+  if (!is.null(line)) {
+    tmp <- sprintf(": solid %s %s;", paste0(line_width, "em"), line_color)
+    if (grepl("t", line)) settings$bootstrap <- paste0(settings$bootstrap, " border-top", tmp)
+    if (grepl("b", line)) settings$bootstrap <- paste0(settings$bootstrap, " border-bottom", tmp)
+    if (grepl("l", line)) settings$bootstrap <- paste0(settings$bootstrap, " border-left", tmp)
+    if (grepl("r", line)) settings$bootstrap <- paste0(settings$bootstrap, " border-right", tmp)
+  }
+
   # unique IDs for each CSS style combination
   id <- sapply(unique(settings$bootstrap), function(k) get_id(stem = "tinytable_css_"))
   settings$id <- id[match(settings$bootstrap, names(id))]
@@ -122,11 +136,7 @@ style_bootstrap <- function(x,
   }
 
   if (!is.null(bootstrap_class)) {
-    out <- gsub(
-      "$tinytable_BOOTSTRAP_CLASS",
-      bootstrap_class,
-      out,
-      fixed = TRUE)
+    out <- meta(out, "bootstrap_class", bootstrap_class)
   }
 
   # Changing function names to table ID to avoid conflict with other tables functions 

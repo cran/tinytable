@@ -1,17 +1,20 @@
 
 
 <p align="center">
-<img src="man/figures/tinytable_logo.svg" height = "250" class = "center">
+<img src="man/figures/gallery/tinytable_gallery.gif" height = "250" class = "center">
+<br> <!-- badges: start -->
+<a href = "https://github.com/vincentarelbundock/tinytable/blob/main/LICENSE.md" target = "_blank"><img src="https://img.shields.io/badge/license-GPLv3-blue"></a>
+<a href = "https://vincentarelbundock.github.io/tinytable/" target = "_blank"><img src="https://img.shields.io/static/v1?label=Website&message=Visit&color=blue"></a>
+<!-- badges: end -->
 </p>
-
-<br> <!-- badges: start --> <!-- badges: end -->
 
 ## What?
 
-`tinytable` is a small but powerful `R` package to draw HTML, LaTeX,
-PDF, Markdown, and Typst tables. The user interface is minimalist, but
-it gives users access to powerful frameworks to create endlessly
-customizable tables.
+`tinytable` is a small but powerful `R` package to draw beautiful tables
+in a variety of formats: HTML, LaTeX, Word, PDF, PNG, Markdown, and
+Typst. The user interface is minimalist and easy to learn, while giving
+users access to powerful frameworks to create endlessly customizable
+tables.
 
 <https://vincentarelbundock.github.io/tinytable/>
 
@@ -26,7 +29,7 @@ package which was:
     with few functions to learn.
 -   *Flexible*: Expressive frameworks to customize tables in HTML and
     LaTeX formats.[1]
--   *Zero-dependency*: Avoid importing any other `R` package.
+-   *Zero-dependency*: Avoid importing any other `R` package.[2]
 -   *Concise*: Draw beautiful tables without typing a lot of code.
 -   *Safe*: User inputs are checked thoroughly, and informative errors
     are returned early.
@@ -37,10 +40,6 @@ package which was:
 -   *Free*: This package will always be free. Tiny tables for a tiny
     price!
 
-These are some of the tables that `tinytable` can draw:
-
-![](man/figures/gallery/tinytable_gallery.gif)
-
 To achieve these goals, the design philosophy of `tinytable` rests on
 three pillars:
 
@@ -48,9 +47,9 @@ three pillars:
     keeps the content of a table separate from the style sheet that
     applies to its cells. This is in contrast to other `R` packages that
     modify the actual text in each cell to style it. Keeping data and
-    style separate allows `tidytable` to create human-readable files
+    style separate allows `tinytable` to create human-readable files
     which are easy to edit, debug, and extend. It also enables
-    developers to keep a tidy code base, with minimal use of messy
+    developers to keep a simpler code base, with minimal use of messy
     regular expressions.
 
 2.  *Flexibility.* Users’ needs are extremely varied, and a
@@ -70,7 +69,6 @@ three pillars:
 Install the stable version from CRAN:
 
 ``` r
-```r
 install.packages("tinytable")
 ```
 
@@ -120,3 +118,8 @@ tables/plots, please check out my `modelsummary` package:
 
 [1] Other formats like Markdown and Typst are also available, but less
 flexible.
+
+[2] Some extra packages can be imported to access specific
+functionality, such as integration with Quarto, inserting `ggplot2`
+objects as inline plots, and saving tables to PNG images or PDF
+documents.
