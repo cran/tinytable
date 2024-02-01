@@ -16,6 +16,7 @@ format_tt(
   date = "\%Y-\%m-\%d",
   bool = function(column) tools::toTitleCase(tolower(column)),
   other = as.character,
+  escape = FALSE,
   markdown = FALSE,
   sprintf = NULL
 )
@@ -43,6 +44,8 @@ format_tt(
 
 \item{other}{A function to format columns of other types. Defaults to \code{as.character()}.}
 
+\item{escape}{Logical or String; if TRUE, escape special characters to display them as text in the format of the output of a \code{tt()} table. If \code{format_tt()} is called as a standalone function instead of on a \code{tt()} table, the \code{escape} argument accepts strings to specify the escaping method: "latex" or "html".}
+
 \item{markdown}{Logical; if TRUE, render markdown syntax in cells. Ex: \verb{_italicized text_} is properly italicized in HTML and LaTeX.}
 
 \item{sprintf}{String passed to the \code{?sprintf} function to format numbers or interpolate strings with a user-defined pattern (similar to the \code{glue} package, but using Base R).}
@@ -59,10 +62,10 @@ It also includes custom formatting for date and boolean values.
 dat <- data.frame(
   a = rnorm(3, mean = 10000),
   b = rnorm(3, 10000))
-tab <- format_tt(dat,
+tab <- tt(dat)
+format_tt(tab,
  digits = 2,
  num_mark_dec = ",",
  num_mark_big = " ")
-tt(tab)
 
 }

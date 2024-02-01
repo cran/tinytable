@@ -10,7 +10,7 @@ knit_print.tinytable <- function(x,
   # lazy styles get evaluated here, at the very end
   out <- build_tt(x, output = output)
 
-  if (meta(out)$output == "html") {
+  if (isTRUE(meta(out)$output == "html")) {
     # from htmltools:::html_preserve
     # GPL3
     inline <- grepl(out, "\n", fixed = TRUE)
@@ -21,23 +21,47 @@ knit_print.tinytable <- function(x,
     }
   }
 
+  if (isTRUE(meta(out)$output == "typst")) {
+    # from htmltools:::html_preserve
+    # GPL3
+    inline <- grepl(out, "\n", fixed = TRUE)
+    if (inline) {
+      out <- sprintf("`%s`{=typst}", out)
+    } else {
+      out <- sprintf("\n```{=typst}\n%s\n```\n", out)
+    }
+  }
+
   class(out) <- "knit_asis"
   return(out)
 }
 
 
+#' Print a tinytable to console or in an HTML viewer pane
+#' 
+#' This function is called automatically by `R` whenever a `tinytable` object is anprinted to the console or in an HTML viewer pane.
+#' 
+#' @inheritParams tt
+#' @param output format in which a Tiny Table is printed: `NULL` or one of `"latex"`, `"markdown"`, `"html"`, `"typst"`. If `NULL`, the output is chosen based on these rules:
+#' + When called from a script in non-interactive mode, the default is "markdown" (`interactive() == FALSE`).
+#' + When called interactively in RStudio, the default is to display an HTML table in the viewer pane.
+#' + When called interactively in another development environment, the default is "markdown". 
+#' + The default print output can be changed for an entire R session by calling: `options(tinytable_print_output = "html")`
+#' + The default print output can be changed for a single `tinytable` object by modifying the `output` element of the meta data attribute: `attr(x,"tinytable_meta")`
+#' @param ... Other arguments are ignored.
+#' @return launch a browser window or cat() the table to console.
 #' @export
 print.tinytable <- function(x,
                             output = getOption("tinytable_print_output", default = NULL),
                             ...){
 
-  assert_choice(output, c("latex", "markdown", "html"), null.ok = TRUE)
+  assert_choice(output, c("latex", "markdown", "html", "typst"), null.ok = TRUE)
 
   if (is.null(output)) output <- meta(x, "output")
 
   # lazy styles get evaluated here by build_tt(), at the very end
-  if (output == "latex") {
-    out <- build_tt(x, output = "latex")
+  if (output %in% c("latex", "typst")) {
+    out <- build_tt(x, output = output)
     class(out) <- "character"
     cat("\n")
     cat(out)
@@ -66,7 +90,11 @@ print.tinytable <- function(x,
       cat(out, sep = "\n")
       cat("\n")
     }
+
+  } else {
+    stop("here be dragons")
   }
 
+  return(invisible(out))
 }
 

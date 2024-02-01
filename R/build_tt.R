@@ -18,6 +18,9 @@ build_tt <- function(x, output = NULL) {
     out <- eval(l)
   }
 
+  # add footnote markers just after formatting, otherwise appending converts to string
+  out <- footnote_markers(out)
+
   # plots and images
   for (l in m$lazy_plot) {
     tmp <- out
@@ -46,25 +49,34 @@ build_tt <- function(x, output = NULL) {
     lazy_tt[[1]] <- quote(tt_tabularray)
   } else if (output == "markdown") {
     lazy_tt[[1]] <- quote(tt_grid)
+  } else if (output == "typst") {
+    lazy_tt[[1]] <- quote(tt_typst)
   }
   out <- eval(lazy_tt)
   out <- meta(out, "output", output)
 
-  # group the table (before style)
-  for (l in m$lazy_group) {
+  for (idx in seq_along(m$lazy_group)) {
+    l <- m$lazy_group[[idx]]
     l[["x"]] <- out
+    l[["ihead"]] <- -1 * idx
     if (output == "html") {
       l[[1]] <- quote(group_bootstrap)
     } else if (output == "latex") {
       l[[1]] <- quote(group_tabularray)
     } else if (output == "markdown") {
       l[[1]] <- quote(group_grid)
+    } else if (output == "typst") {
+      l[[1]] <- quote(group_typst)
     }
     out <- eval(l)
   }
   out <- meta(out, "output", output)
 
   # style the table
+  if (output == "typst") {
+    # rules of precedence appear to differ
+    m$lazy_style <- rev(m$lazy_style)
+  }
   if (output != "markdown") {
     for (l in m$lazy_style) {
       l[["x"]] <- out
@@ -74,6 +86,7 @@ build_tt <- function(x, output = NULL) {
 
   # finalize 
   out <- finalize_bootstrap(out)
+  out <- finalize_typst(out)
   out <- finalize_grid(out)
 
   m <- meta(x)

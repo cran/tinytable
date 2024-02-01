@@ -17,13 +17,19 @@ tt(
 \arguments{
 \item{x}{A data frame or data table to be rendered as a table.}
 
-\item{digits}{Number of significant digits to keep for numeric variables. When \code{digits} is an integer, \code{tt()} calls \code{format_tt(x, digits = digits)} before proceeding to draw the table. Users who need more control can proceed in two steps: (1) format the data with \code{format_tt()} or other functions, and (2) pass the formatted data to \code{tt()} for drawing. See \code{?format_tt} for more details on formating options (ex: decimal, scientific notation, dates, boolean variables, etc.).}
+\item{digits}{Number of significant digits to keep for numeric variables. When \code{digits} is an integer, \code{tt()} calls \code{format_tt(x, digits = digits)} before proceeding to draw the table. Users who need more control can proceed in two steps: (1) format the data with \code{format_tt()} or other functions, and (2) pass the formatted data to \code{tt()} for drawing. See \code{?format_tt} for more details on formatting options (ex: decimal, scientific notation, dates, boolean variables, etc.).}
 
 \item{caption}{A string that will be used as the caption of the table.}
 
 \item{width}{A numeric value between 0 and 1 indicating the proportion of the line width that the table should cover.}
 
-\item{notes}{A single string or a (named) list of strings to append at the bottom of the table.}
+\item{notes}{Notes to append to the bottom of the table. This argument accepts several different inputs:
+\itemize{
+\item Single string insert a single note: \code{"blah blah"}
+\item Multiple strings insert multiple notes sequentially: \code{list("Hello world", "Foo bar")}
+\item A named list inserts a list with the name as superscript: \code{list("a" = list("Hello World"))}
+\item A named list with positions inserts markers as superscripts inside table cells: \code{list("a" = list(i = 0:1, j = 2, text = "Hello World"))}
+}}
 
 \item{theme}{The theme to apply to the table: "default", "striped", "bootstrap", "void", or "grid".}
 
@@ -31,13 +37,17 @@ tt(
 }
 \value{
 An object of class \code{tt} representing the table.
+
+The table object has an attribute which holds information about the structure of the table. This metadata can be accessed with \code{attr(x,"tinytable_meta")}. In general, modifying the content of this attribute is not recommended, but it can be useful to some developers, such as those who want to force print to a specific output format without calling \code{print()}.
 }
 \description{
-The \code{tt} function renders a table in different formats (HTML, Markdown, or LaTeX) with various styling options. The table can be customized with additional functions:
+The \code{tt} function renders a table in different formats with various styling options: HTML, Markdown, LaTeX, Word, PDF, PNG, or Typst. The table can be customized with additional functions:
 \itemize{
 \item \code{style_tt()} to style fonts, colors, alignment, etc.
 \item \code{format_tt()} to format numbers, dates, strings, etc.
+\item \code{group_tt()} for row or column group labels.
 \item \code{save_tt()} to save the table to a file or return the table as a string.
+\item \code{print()} to print to a specific format, ex: \code{print(x, "latex")}
 }
 
 \code{tinytable} attempts to determine the appropriate way to print the table based on interactive use, RStudio availability, and output format in RMarkdown or Quarto documents. Users can call \code{print(x, output="markdown")} to print the table in a specific format. Alternatively, they can set a global option: \code{options("tinytable_print_output"="markdown")}
@@ -69,5 +79,11 @@ tt(x,
    theme = "striped",
    width = 0.5,
    caption = "Data about cars.")
+
+tt(x, notes = "Hello World!")
+
+fn <- list(i = 0:1, j = 2, text = "Hello World!")
+tab <- tt(x, notes = list("*" = fn))
+print(tab, "latex")
 
 }

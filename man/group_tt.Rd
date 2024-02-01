@@ -4,20 +4,36 @@
 \alias{group_tt}
 \title{Spanning labels to identify groups of rows or columns}
 \usage{
-group_tt(x, i = NULL, j = NULL, indent = 1)
+group_tt(x, i = NULL, j = NULL, indent = 1, ...)
 }
 \arguments{
 \item{x}{A data frame or data table to be rendered as a table.}
 
-\item{i}{Row indices where the styling should be applied. Can be a single value or a vector. \code{i=0} is the header, and negative values are higher level headers. If \code{colspan} is used, \code{i} must be of length 1.}
+\item{i}{A named list of row indices to group. The names of the list will be used as labels.}
 
-\item{j}{Column indices where the styling should be applied. Can be a single value, a vector, or a Perl-style regular expression applied to column names of the original data frame. If \code{colspan} is used, \code{j} must be of length 1.}
+\item{j}{A named list of column indices to group. The names of the list will be used as labels. See examples below. Note: empty labels must be a space: " ".}
 
 \item{indent}{integer number of \code{pt} to use when indenting the non-labelled rows.}
+
+\item{...}{Other arguments are ignored.}
 }
 \value{
 An object of class \code{tt} representing the table.
 }
 \description{
 Spanning labels to identify groups of rows or columns
+}
+\details{
+Warning: The \code{style_tt()} can normally be used to style the group headers, as expected, but that feature is not available for Markdown and Word tables.
+}
+\examples{
+
+tt(mtcars[1:10, 1:5]) |>
+  group_tt(
+    i = list(
+      "Hello" = 3,
+      "World" = 8),
+    j = list(
+      "Foo" = 2:3,
+      "Bar" = 4:5))
 }

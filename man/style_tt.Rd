@@ -2,7 +2,7 @@
 % Please edit documentation in R/style_tt.R
 \name{style_tt}
 \alias{style_tt}
-\title{Style a Tiny Table in either LaTeX or HTML format}
+\title{Style a Tiny Table}
 \usage{
 style_tt(
   x,
@@ -68,7 +68,7 @@ style_tt(
 
 \item{fontsize}{Integer Font size in pt units.}
 
-\item{width}{Width of the cell or column. Can be \code{NULL} for default width.}
+\item{width}{Width of column in em units. Can be \code{NULL} for default width.}
 
 \item{align}{A single character or a string with a number of characters equal to the number of columns in \code{j}. Valid characters include 'c' (center), 'l' (left), or 'r' (right).}
 
@@ -105,12 +105,12 @@ style_tt(
 An object of class \code{tt} representing the table.
 }
 \description{
-Style a Tiny Table in either LaTeX or HTML format
+Style a Tiny Table
 }
 \details{
-This function applies styling to a table created by \code{tt()}. It allows customization of text style (bold, italic, monospace), text and background colors, font size, cell width, text alignment, column span, and indentation. The function supports both LaTeX (tabularray) and HTML (bootstrap) formats.
+This function applies styling to a table created by \code{tt()}. It allows customization of text style (bold, italic, monospace), text and background colors, font size, cell width, text alignment, column span, and indentation. The function also supports passing native instructions to LaTeX (tabularray) and HTML (bootstrap) formats.
 
-Note that Markdown and Word formats are limited to these styles: italic, bold, strikeout.
+Warning: Markdown and Word formats are limited to these styles: italic, bold, strikeout. This is because there is no markdown syntax for the other options, and because we create Word documents by converting a markdown table to .docx via the Pandoc software.
 }
 \section{LaTeX preamble}{
 
@@ -134,7 +134,7 @@ library(tinytable)
 x <- mtcars[1:5, 1:5]
 tab <- tt(x)
 tab <- style_tt(tab, j = 1:5, align = "lcccr")
-tab <- style_tt(tab, i = 2:3,
- background = "black", color = "orange", bold = TRUE)
+tab <- style_tt(tab, i = 2:3, background = "black", color = "orange", bold = TRUE)
+tab
 
 }

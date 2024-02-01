@@ -4,9 +4,8 @@
 #'
 #' @param x The tinytable object to be saved.
 #' @param output String or file path. 
-#' + If `output` is "markdown", "latex", or "html", the table is returned in a string as an `R` object. 
-#' + If `output` is a valid file path, the table is saved to file. The supported extensions are: .docx, .html, .png, .pdf, .tex and .md (with aliases .txt, .Rmd and .qmd).
-#' + Warning: `style_tt()` does not work for Markdown or Word tables.
+#' + If `output` is "markdown", "latex", "html", or "typst", the table is returned in a string as an `R` object. 
+#' + If `output` is a valid file path, the table is saved to file. The supported extensions are: .docx, .html, .png, .pdf, .tex, .typ, and .md (with aliases .txt, .Rmd and .qmd).
 #' @param overwrite A logical value indicating whether to overwrite an existing file. 
 #' @return A string or `TRUE` when the table is written to file.
 #' @export
@@ -37,6 +36,9 @@ save_tt <- function(x, output, overwrite = FALSE) {
   } else if (identical(output, "latex")) {
     out <- build_tt(x, output = "latex")
     return(as.character(out))
+  } else if (identical(output, "typst")) {
+    out <- build_tt(x, output = "typst")
+    return(as.character(out))
   }
 
   x <- meta(x, "output_dir", dirname(output))
@@ -53,12 +55,13 @@ save_tt <- function(x, output, overwrite = FALSE) {
   "qmd" = "markdown",
   "txt" = "markdown",
   "docx" = "markdown",
+  "typ" = "typst",
   stop("The supported file extensions are: .png, .html, .pdf, .tex, and .md.", call. = FALSE))
 
   # evaluate styles at the very end of the pipeline, just before writing
   x <- build_tt(x, output = output_format)
 
-  if (file_ext %in% c("html", "tex", "md", "Rmd", "qmd", "txt")) {
+  if (file_ext %in% c("html", "tex", "md", "Rmd", "qmd", "txt", "typ")) {
     write(x, file = output)
 
   } else if (file_ext == "png") {

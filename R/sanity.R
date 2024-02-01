@@ -4,7 +4,7 @@ usepackage_latex <- function(name, options = NULL, extra_lines = NULL) {
 
 
 sanitize_output <- function(output) {
-  assert_choice(output, choice = c("markdown", "latex", "html"), null.ok = TRUE)
+  assert_choice(output, choice = c("markdown", "latex", "html", "typst"), null.ok = TRUE)
 
   # default output format
   if (is.null(output)) {
@@ -156,7 +156,6 @@ check_numeric <- function(x, len = NULL, lower = NULL, upper = NULL, null.ok = T
 assert_numeric <- function(x, len = NULL, lower = NULL, upper = NULL, null.ok = FALSE, name = as.character(substitute(x))) {
   msg <- sprintf("`%s` must be numeric", name)
   if (!isTRUE(check_numeric(x, len = len, lower = lower, upper = upper, null.ok = null.ok))) {
-    if (!is.numeric(x)) msg <- paste0(msg, "; it is not numeric")
     if (!is.null(len) && length(x) != len) msg <- paste0(msg, sprintf("; its length must be %s", len))
     if (!is.null(lower) && any(x < lower)) msg <- paste0(msg, sprintf("; all values must be greater than or equal to %s", lower))
     if (!is.null(upper) && any(x > upper)) msg <- paste0(msg, sprintf("; all values must be less than or equal to %s", upper))
@@ -226,5 +225,30 @@ assert_class <- function(x, classname) {
   if (!inherits(x, classname)) {
     msg <- sprintf("`x` must be of class `%s`.", classname)
     stop(msg, call. = FALSE)
+  }
+}
+
+
+sanity_notes <- function(notes) {
+  if (is.character(notes) && length(notes) > 0) {
+    notes <- as.list(notes)
+  }
+  assert_list(notes, null.ok = TRUE)
+  for (idx in seq_along(notes)) {
+    n <- notes[[idx]]
+    bad <- FALSE
+    if (is.list(n)) {
+      if (is.null(names(notes)[idx])) {
+        bad <- TRUE
+      }
+      if (!all(c("i", "j", "text") %in% names(n))) {
+        bad <- TRUE
+      }
+    } else if (!is.character(n) || length(n) != 1) {
+      bad <- TRUE
+    }
+    if (isTRUE(bad)) {
+      stop("`notes` includes invalid elements. Please refer to the documentation for details.", call. = FALSE)
+    }
   }
 }
