@@ -31,5 +31,30 @@ tab <- tt(x) |> group_tt(i)
 expect_snapshot_print(tab, label = "markdown-issue105")
 
 
+# Issue 127: Large column
+test <- data.frame(a = 1, b = 2, c = 3)
+tab <- tt(test) |>
+  group_tt(j = list("foobar" = 1:2, "hello world" = 3)) |>
+  group_tt(j = list("foobar and hello world" = 2:3))
+expect_snapshot_print(tab, label = "markdown-group_j_wider_1")
+
+
+test <- data.frame(a = 1, b = 2, c = 3)
+tab <- tt(test) |>
+  group_tt(j = list("foobar" = 1:2, "hello world" = 3))
+expect_snapshot_print(tab, label = "markdown-group_j_wider_2")
+
+
+# Issue #133
+tab <- tt(mtcars[1:8, 1:3]) |>
+  group_tt(i = list("Hello" = 3, "World" = 6)) |>
+  group_tt(j = list("Hello" = 1, "World" = 2:3)) |>
+  style_tt(i = 2:4, italic = TRUE) |>
+  style_tt(i = 6, strikeout = TRUE) |>
+  style_tt(i = 8, bold = TRUE)
+expect_snapshot_print(tab, label = "markdown-group_i_style_tt")
+
+
+
 
 options(tinytable_print_output = NULL)

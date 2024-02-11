@@ -1,5 +1,22 @@
 # News
 
+## 0.0.4
+
+New:
+
+- `j` argument in `style_tt()` and `format_tt()` now accepts a string vector to match columns. Issue #122
+- Line plots: `plot_tt(fun = "line")`
+- `format_tt(j=NULL, escape=TRUE)` now escapes column headers in addition to all cells.
+- `format_tt()` gains a `replace_na` argument to replace missing values.
+- `style_tt()`: `rowspan` and `colspan` arguments are now supported in all formats except Typst. In markdown and Word, we get "pseudo-spans" with empty cells around the main cell, instead of true merged cells.
+- `style_tt()`: `alignv` argument is now supported for LaTeX and HTML
+
+Bugfix:
+
+- Markdown group columns when labels are wider than columns. Thanks to @etiennebacher for report #127.
+- Markdown group rows broke indexing when using `style_tt()`. Thanks to @strengejacke for report #133.
+
+
 ## 0.0.3
 
 New:
@@ -12,6 +29,7 @@ New:
   - `tt(x, notes = list("*" = list(i = 0:1, j = 2, text = "Hello world)))`
 - `notes` agument in `tt()` now works wth Markdown and Word, but must be a single string.
 - `group_tt()` can be called multiple times to create mult-row headers.
+
 
 ## 0.0.2
 
@@ -36,7 +54,8 @@ Documentation:
 
 - Improved vignette on the package website. 
 - Various documentation updates.
-- Math in $$ is new recommendation.
+- Math in $$ is the new recommendation.
+
 
 ## 0.0.1
 

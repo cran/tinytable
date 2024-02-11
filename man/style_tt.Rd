@@ -18,7 +18,9 @@ style_tt(
   fontsize = NULL,
   width = NULL,
   align = NULL,
+  alignv = NULL,
   colspan = NULL,
+  rowspan = NULL,
   indent = 0,
   line = NULL,
   line_color = "black",
@@ -36,7 +38,12 @@ style_tt(
 
 \item{i}{Row indices where the styling should be applied. Can be a single value or a vector. \code{i=0} is the header, and negative values are higher level headers. If \code{colspan} is used, \code{i} must be of length 1.}
 
-\item{j}{Column indices where the styling should be applied. Can be a single value, a vector, or a Perl-style regular expression applied to column names of the original data frame. If \code{colspan} is used, \code{j} must be of length 1.}
+\item{j}{Column indices where the styling should be applied. Can be:
+\itemize{
+\item Integer vectors indicating column positions.
+\item Character vector indicating column names.
+\item A single string specifying a Perl-style regular expression used to match column names.
+}}
 
 \item{bold}{Logical; if \code{TRUE}, text is styled in bold.}
 
@@ -72,7 +79,11 @@ style_tt(
 
 \item{align}{A single character or a string with a number of characters equal to the number of columns in \code{j}. Valid characters include 'c' (center), 'l' (left), or 'r' (right).}
 
-\item{colspan}{Number of columns a cell should span. Can only be used if both \code{i} and \code{j} are of length 1. Must be an integer greater than 1.}
+\item{alignv}{A single character specifying vertical alignment. Valid characters include 't' (top), 'm' (middle), 'b' (bottom).}
+
+\item{colspan}{Number of columns a cell should span. \code{i} and \code{j} must be of length 1.}
+
+\item{rowspan}{Number of rows a cell should span. \code{i} and \code{j} must be of length 1.}
 
 \item{indent}{Text indentation in em units. Positive values only.}
 
@@ -110,7 +121,7 @@ Style a Tiny Table
 \details{
 This function applies styling to a table created by \code{tt()}. It allows customization of text style (bold, italic, monospace), text and background colors, font size, cell width, text alignment, column span, and indentation. The function also supports passing native instructions to LaTeX (tabularray) and HTML (bootstrap) formats.
 
-Warning: Markdown and Word formats are limited to these styles: italic, bold, strikeout. This is because there is no markdown syntax for the other options, and because we create Word documents by converting a markdown table to .docx via the Pandoc software.
+Note: Markdown and Word tables only support these styles: italic, bold, strikeout. Moreover, the \code{style_tt()} function cannot be used to style headers inserted by the \code{group_tt()} function; instead, you should style the headers directly in the header definition using markdown syntax: \code{group_tt(i = list("*italic header*" = 2))}. These limitations are due to the fact that there is no markdown syntax for the other options, and that we create Word documents by converting a markdown table to .docx via the Pandoc software.
 }
 \section{LaTeX preamble}{
 
@@ -131,10 +142,19 @@ When rendering Quarto and Rmarkdown documents, \code{tinytable} will populate th
 
 \examples{
 library(tinytable)
-x <- mtcars[1:5, 1:5]
+x <- mtcars[1:5, 1:6]
 tab <- tt(x)
-tab <- style_tt(tab, j = 1:5, align = "lcccr")
-tab <- style_tt(tab, i = 2:3, background = "black", color = "orange", bold = TRUE)
+
+# Alignment
+style_tt(tab, j = 1:5, align = "lcccr")
+style_tt(tab, i = 2:3, background = "black", color = "orange", bold = TRUE)
 tab
+
+# column selection with `j``
+x <- mtcars[1:5, 1:6]
+tab <- tt(x)
+style_tt(tab, j = 5:6, background = "pink")
+style_tt(tab, j = "drat|wt", background = "pink")
+style_tt(tab, j = c("drat", "wt"), background = "pink")
 
 }

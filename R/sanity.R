@@ -1,7 +1,26 @@
 usepackage_latex <- function(name, options = NULL, extra_lines = NULL) {
+  assert_dependency("rmarkdown")
   invisible(knitr::knit_meta_add(list(rmarkdown::latex_dependency(name, options, extra_lines))))
 }
 
+
+sanitize_j <- function(j, x) {
+  # regex
+  if (is.character(j) && length(j) == 1 && !is.null(meta(x, "colnames"))) {
+    j <- grep(j, meta(x, "colnames"), perl = TRUE)
+  # full names
+  } else if (is.character(j) && length(j) > 1 && !is.null(meta(x, "colnames"))) {
+    bad <- setdiff(j, meta(x, "colnames"))
+    if (length(bad) > 0) {
+      msg <- sprintf("Missing columns: %s", paste(bad, collapse = ", "))
+      stop(msg, call. = FALSE)
+    }
+    j <- which(meta(x, "colnames") %in% j)
+  } else {
+    assert_integerish(j, lower = 1, upper = meta(x, "ncols"), null.ok = TRUE)
+  }
+  return(j)
+}
 
 sanitize_output <- function(output) {
   assert_choice(output, choice = c("markdown", "latex", "html", "typst"), null.ok = TRUE)
@@ -120,6 +139,7 @@ assert_logical <- function(x, null.ok = FALSE, name = as.character(substitute(x)
 check_integerish <- function(x, len = NULL, lower = NULL, upper = NULL, null.ok = TRUE) {
   if (is.null(x) && isTRUE(null.ok)) return(TRUE)
   if (!is.numeric(x)) return(FALSE)
+  x <- stats::na.omit(x)
   if (!is.null(len) && length(x) != len) return(FALSE)
   if (!is.null(lower) && any(x < lower)) return(FALSE)
   if (!is.null(upper) && any(x > upper)) return(FALSE)

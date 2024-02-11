@@ -31,6 +31,7 @@ finalize_grid <- function(x) {
       out <- paste(out, collapse = "\n")
     }
 
+
     # caption
     cap <- meta(x, "caption")
     if (is.character(cap) && length(cap) == 1) {
@@ -38,4 +39,13 @@ finalize_grid <- function(x) {
     }
 
     return(out)
+}
+
+
+
+replace_char_at_position <- function(input_string, position, replacement_char) {
+  before <- substr(input_string, 1, position - 1)
+  after <- substr(input_string, position + 1, nchar(input_string))
+  result <- paste0(before, replacement_char, after)
+  return(result)
 }

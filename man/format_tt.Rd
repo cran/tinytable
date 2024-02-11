@@ -16,6 +16,7 @@ format_tt(
   date = "\%Y-\%m-\%d",
   bool = function(column) tools::toTitleCase(tolower(column)),
   other = as.character,
+  replace_na = "",
   escape = FALSE,
   markdown = FALSE,
   sprintf = NULL
@@ -24,7 +25,12 @@ format_tt(
 \arguments{
 \item{x}{A data frame or a vector to be formatted.}
 
-\item{j}{Column indices where the styling should be applied. Can be a single value, a vector, or a Perl-style regular expression applied to column names of the original data frame. If \code{colspan} is used, \code{j} must be of length 1.}
+\item{j}{Column indices where the styling should be applied. Can be:
+\itemize{
+\item Integer vectors indicating column positions.
+\item Character vector indicating column names.
+\item A single string specifying a Perl-style regular expression used to match column names.
+}}
 
 \item{digits}{Number of significant digits or decimal places.}
 
@@ -43,6 +49,8 @@ format_tt(
 \item{bool}{A function to format logical columns. Defaults to title case.}
 
 \item{other}{A function to format columns of other types. Defaults to \code{as.character()}.}
+
+\item{replace_na}{String to display for missing values.}
 
 \item{escape}{Logical or String; if TRUE, escape special characters to display them as text in the format of the output of a \code{tt()} table. If \code{format_tt()} is called as a standalone function instead of on a \code{tt()} table, the \code{escape} argument accepts strings to specify the escaping method: "latex" or "html".}
 
