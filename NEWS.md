@@ -1,5 +1,10 @@
 # News
 
+## 0.0.5
+
+* `format_tt()` escapes <> tags in Typst.
+* Bug introduced in 0.0.4 prevented `group_tt(i)` in HTML.
+
 ## 0.0.4
 
 New:
