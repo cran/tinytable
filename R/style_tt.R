@@ -28,8 +28,7 @@
 #' @param background Background color. Specified as a color name or hexadecimal code. Can be `NULL` for default color.
 #' @param fontsize Font size in em units. Can be `NULL` for default size.
 #' @param width Width of column in em units. Can be `NULL` for default width.
-#' @param fontsize Integer Font size in pt units.
-#' @param align A single character or a string with a number of characters equal to the number of columns in `j`. Valid characters include 'c' (center), 'l' (left), or 'r' (right).
+#' @param align A single character or a string with a number of characters equal to the number of columns in `j`. Valid characters include 'c' (center), 'l' (left), 'r' (right), 'd' (decimal). Decimal alignment is only available in LaTeX via the `siunitx` package. The width of columns is determined by the maximum number of digits to the left and to the right in all cells specified by `i` and `j`.
 #' @param alignv A single character specifying vertical alignment. Valid characters include 't' (top), 'm' (middle), 'b' (bottom).
 #' @param colspan Number of columns a cell should span. `i` and `j` must be of length 1.
 #' @param rowspan Number of rows a cell should span. `i` and `j` must be of length 1.
@@ -42,6 +41,7 @@
 #' + Can be combined such as: "lbt" to draw borders at the left, bottom, and top.
 #' @param line_color Color of the line. See the `color` argument for details.
 #' @param line_width Width of the line in em units (default: 0.1).
+#' @param finalize A function applied to the table object at the very end of table-building, for post-processing. For example, the function could use regular expressions to add LaTeX commands to the text version of the table hosted in `x@table_string`, or it could programmatically change the caption in `x@caption`.
 #' @param bootstrap_class String. A Bootstrap table class such as `"table"`, `"table table-dark"` or `"table table-dark table-hover"`. See the bootstrap documentation. 
 #' @param bootstrap_css A vector of CSS style declarations to be applied (ex: `"font-weight: bold"`). Each element corresponds to a cell defined by `i` and `j`.
 #' @param bootstrap_css_rule A string with complete CSS rules that apply to the table class specified using the `theme` argument of the `tt()` function.
@@ -51,22 +51,74 @@
 #' @return An object of class `tt` representing the table.
 #' @template latex_preamble
 #' @export
+#' @examplesIf knitr::is_html_output()
 #' @examples
+#' if (knitr::is_html_output()) options(tinytable_print_output = "html")
+#' 
 #' library(tinytable)
-#' x <- mtcars[1:5, 1:6]
-#' tab <- tt(x)
+#' 
+#' tt(mtcars[1:5, 1:6])
 #' 
 #' # Alignment
-#' style_tt(tab, j = 1:5, align = "lcccr")
-#' style_tt(tab, i = 2:3, background = "black", color = "orange", bold = TRUE)
-#' tab
+#' tt(mtcars[1:5, 1:6]) |> 
+#'   style_tt(j = 1:5, align = "lcccr")
+#' 
+#' # Colors and styles
+#' tt(mtcars[1:5, 1:6]) |> 
+#'   style_tt(i = 2:3, background = "black", color = "orange", bold = TRUE)
 #' 
 #' # column selection with `j``
-#' x <- mtcars[1:5, 1:6]
-#' tab <- tt(x)
-#' style_tt(tab, j = 5:6, background = "pink")
-#' style_tt(tab, j = "drat|wt", background = "pink")
-#' style_tt(tab, j = c("drat", "wt"), background = "pink")
+#' tt(mtcars[1:5, 1:6]) |> 
+#'   style_tt(j = 5:6, background = "pink")
+#' 
+#' tt(mtcars[1:5, 1:6]) |>
+#'   style_tt(j = "drat|wt", background = "pink")
+#' 
+#' tt(mtcars[1:5, 1:6]) |>
+#'   style_tt(j = c("drat", "wt"), background = "pink")
+#'
+#' tt(mtcars[1:5, 1:6], theme = "void") |>
+#'   style_tt(
+#'     i = 2, j = 2,
+#'     colspan = 3,
+#'     rowspan = 2,
+#'     align="c",
+#'     alignv = "m",
+#'     color = "white",
+#'     background = "black",
+#'     bold = TRUE)
+#'   
+#' tt(mtcars[1:5, 1:6], theme = "void") |>
+#'   style_tt(
+#'     i=0:3,
+#'     j=1:3,
+#'     line="tblr",
+#'     line_width=0.4,
+#'     line_color="teal")
+#'     
+#' tt(mtcars[1:5, 1:6], theme = "bootstrap") |>
+#'     style_tt(
+#'       i = c(2,5),
+#'       j = 3,
+#'       strikeout = TRUE,
+#'       fontsize = 0.7)
+#'       
+#' tt(mtcars[1:5, 1:6]) |>
+#'   style_tt(bootstrap_class = "table table-dark table-hover")
+#'
+#'
+#' inner <- "
+#' column{1-4}={halign=c},
+#' hlines = {fg=white},
+#' vlines = {fg=white},
+#' cell{1,6}{odd} = {bg=teal7},
+#' cell{1,6}{even} = {bg=green7},
+#' cell{2,4}{1,4} = {bg=red7},
+#' cell{3,5}{1,4} = {bg=purple7},
+#' cell{2}{2} = {r=4,c=2}{bg=azure7},
+#' "
+#' tt(mtcars[1:5, 1:4], theme = "void") |>
+#'   style_tt(tabularray_inner = inner)
 #'
 style_tt <- function (x,
                       i = NULL,
@@ -88,6 +140,7 @@ style_tt <- function (x,
                       line = NULL,
                       line_color = "black",
                       line_width = 0.1,
+                      finalize = NULL,
                       tabularray_inner = NULL,
                       tabularray_outer = NULL,
                       bootstrap_class = NULL,
@@ -127,7 +180,12 @@ style_tt <- function (x,
   if (isTRUE(list(...)[["tt_build_now"]])) {
     out <- eval(cal)
   } else {
-    out <- meta(out, "lazy_style", c(meta(out)$lazy_style, list(cal)))
+    out@lazy_style <- c(out@lazy_style, list(cal))
+  }
+
+  assert_function(finalize, null.ok = TRUE)
+  if (is.function(finalize)) {
+    out@lazy_finalize <- c(out@lazy_finalize, list(finalize))
   }
 
   return(out)
@@ -161,10 +219,6 @@ style_tt_lazy <- function (x,
                            bootstrap_css,
                            bootstrap_css_rule) {
 
-  # sanity x
-  if (is.null(meta(x))) stop("`x` must be generated by `tinytable::tt()`.", call. = FALSE)
-  if (!isTRUE(meta(x)$output %in% c("html", "latex", "markdown", "typst"))) return(x)
-
   out <- x
 
   j <- sanitize_j(j, x)
@@ -177,11 +231,11 @@ style_tt_lazy <- function (x,
 
   if (!is.null(align)) {
     if (nchar(align) == 1) {
-      assert_choice(align, c("c", "l", "r"))
+      assert_choice(align, c("c", "l", "r", "d"))
     } else {
       align_split <- strsplit(align, split = "")[[1]]
       for (align_character in align_split){
-        assert_choice(align_character, c("c", "l", "r"))
+        assert_choice(align_character, c("c", "l", "r", "d"))
       }
       if (is.null(j)) {
         msg <- "Please specify the `j` argument."
@@ -190,16 +244,21 @@ style_tt_lazy <- function (x,
     }
   }
     
-  nalign <- if (is.null(j)) meta(x, "ncols") else length(j)
+  nalign <- if (is.null(j)) x@ncol else length(j)
   if (!is.null(align)) {
     align <- strsplit(align, split = "")[[1]]
     if (length(align) != 1 && length(align) != nalign) {
       msg <- sprintf("`align` must be a single character or a string of length %s.", nalign)
       stop(msg, call. = FALSE)
-    }
-    if (any(!align %in% c("c", "l", "r"))) {
-      msg <- "`align` must be characters c, l, or r."
+    } 
+    if (any(!align %in% c("c", "l", "r", "d"))) {
+      msg <- "`align` must be characters c, l, r, or d."
       stop(msg, call. = FALSE)
+    }
+
+    if (any(align == "d")) {
+      tmp <- paste(sprintf("row{%s}={guard},", seq_len(x@nhead)), collapse = "\n")
+      tabularray_inner <- paste(tabularray_inner, tmp)
     }
   }
 
@@ -215,29 +274,8 @@ style_tt_lazy <- function (x,
     width <- paste0(width, "em")
   }
 
-  out <- style_tabularray(
-    x = out, i = i, j = j, bold = bold, italic = italic, monospace = monospace, underline = underline, strikeout = strikeout,
-    color = color, background = background, fontsize = fontsize, width = width, align = align, alignv = alignv, colspan = colspan, rowspan = rowspan, indent = indent,
-    tabularray_inner = tabularray_inner, tabularray_outer = tabularray_outer,
-    line = line, line_color = line_color, line_width = line_width)
 
-  out <- style_bootstrap(
-    x = out, i = i, j = j, bold = bold, italic = italic, monospace = monospace, underline = underline, strikeout = strikeout,
-    color = color, background = background, fontsize = fontsize, width = width, align = align, alignv = alignv, colspan = colspan, rowspan = rowspan, indent = indent,
-    bootstrap_css = bootstrap_css, bootstrap_css_rule = bootstrap_css_rule, bootstrap_class = bootstrap_class,
-    line = line, line_color = line_color, line_width = line_width)
-
-  out <- style_grid(
-    x = out, i = i, j = j, bold = bold, italic = italic, monospace = monospace, underline = underline, strikeout = strikeout,
-    color = color, background = background, fontsize = fontsize, width = width, align = align, alignv = alignv, colspan = colspan, rowspan = rowspan, indent = indent,
-    bootstrap_css = bootstrap_css, bootstrap_css_rule = bootstrap_css_rule,
-    line = line, line_color = line_color, line_width = line_width)
-
-  out <- style_typst(
-    x = out, i = i, j = j, bold = bold, italic = italic, monospace = monospace, underline = underline, strikeout = strikeout,
-    color = color, background = background, fontsize = fontsize, width = width, align = align, alignv = alignv, colspan = colspan, rowspan = rowspan, indent = indent,
-    bootstrap_css = bootstrap_css, bootstrap_css_rule = bootstrap_css_rule,
-    line = line, line_color = line_color, line_width = line_width)
+  out <- style_eval(x = out, i = i, j = j, bold = bold, italic = italic, monospace = monospace, underline = underline, strikeout = strikeout, color = color, background = background, fontsize = fontsize, width = width, align = align, alignv = alignv, colspan = colspan, rowspan = rowspan, indent = indent, tabularray_inner = tabularray_inner, tabularray_outer = tabularray_outer, bootstrap_css = bootstrap_css, bootstrap_css_rule = bootstrap_css_rule, bootstrap_class = bootstrap_class, line = line, line_color = line_color, line_width = line_width)
 
   return(out)
 }
@@ -268,8 +306,6 @@ assert_style_tt <- function (x,
                              bootstrap_class = NULL,
                              bootstrap_css = NULL,
                              bootstrap_css_rule = NULL) {
-
-  m <- meta(x)
 
   if (!is.null(width) && !is.null(i)) {
     msg <- "The `width` argument cannot be used with `i`."
@@ -303,8 +339,8 @@ assert_style_tt <- function (x,
     }
   }
 
-  ival <- if (is.null(i)) meta(x, "nrows") else i
-  jval <- if (is.null(j)) meta(x, "ncols") else j
+  ival <- if (is.null(i)) x@nrow else i
+  jval <- if (is.null(j)) x@ncol else j
 
   # 1
   if (is.null(i) && is.null(j)) {

@@ -6,12 +6,12 @@
 \usage{
 tt(
   x,
-  digits = NULL,
+  digits = getOption("tinytable_tt_digits", default = NULL),
   caption = NULL,
-  width = NULL,
   notes = NULL,
-  theme = "default",
-  placement = getOption("tinytable_tabularray_placement", default = NULL)
+  width = getOption("tinytable_tt_width", default = NULL),
+  theme = getOption("tinytable_tt_theme", default = NULL),
+  ...
 )
 }
 \arguments{
@@ -21,8 +21,6 @@ tt(
 
 \item{caption}{A string that will be used as the caption of the table.}
 
-\item{width}{A numeric value between 0 and 1 indicating the proportion of the line width that the table should cover.}
-
 \item{notes}{Notes to append to the bottom of the table. This argument accepts several different inputs:
 \itemize{
 \item Single string insert a single note: \code{"blah blah"}
@@ -31,23 +29,30 @@ tt(
 \item A named list with positions inserts markers as superscripts inside table cells: \code{list("a" = list(i = 0:1, j = 2, text = "Hello World"))}
 }}
 
-\item{theme}{The theme to apply to the table: "default", "striped", "bootstrap", "void", or "grid".}
+\item{width}{A numeric value between 0 and 1 indicating the proportion of the line width that the table should cover.}
 
-\item{placement}{A string to control the position of tables in LaTeX. Will be inserted in square brackets like: \verb{\\\\begin\{table\}[H]}}
+\item{theme}{Function or string.
+\itemize{
+\item String: grid, resize, multipage, placement, striped, void, bootstrap, tabular
+\item Function: Applied to the \code{tinytable} object.
+}}
+
+\item{...}{Additional arguments are ignored}
 }
 \value{
 An object of class \code{tt} representing the table.
 
-The table object has an attribute which holds information about the structure of the table. This metadata can be accessed with \code{attr(x,"tinytable_meta")}. In general, modifying the content of this attribute is not recommended, but it can be useful to some developers, such as those who want to force print to a specific output format without calling \code{print()}.
+The table object has S4 slots which hold information about the structure of the table. This meta-data can be accessed with the usual \code{@} accessor. In general, modifying the content of these slots is not recommended, but it can be useful to some developers, such as those who want to force print to a specific output format without calling \code{print()}.
 }
 \description{
 The \code{tt} function renders a table in different formats with various styling options: HTML, Markdown, LaTeX, Word, PDF, PNG, or Typst. The table can be customized with additional functions:
 \itemize{
-\item \code{style_tt()} to style fonts, colors, alignment, etc.
-\item \code{format_tt()} to format numbers, dates, strings, etc.
-\item \code{group_tt()} for row or column group labels.
-\item \code{save_tt()} to save the table to a file or return the table as a string.
-\item \code{print()} to print to a specific format, ex: \code{print(x, "latex")}
+\item \code{style_tt()}: style fonts, colors, alignment, etc.
+\item \code{format_tt()}: format numbers, dates, strings, etc.
+\item \code{group_tt()}: row or column group labels.
+\item \code{theme_tt()}: apply a collection of transformations to a \code{tinytable.}
+\item \code{save_tt()}: save the table to a file or return the table as a string.
+\item \code{print()}: print to a specific format, ex: \code{print(x, "latex")}
 }
 
 \code{tinytable} attempts to determine the appropriate way to print the table based on interactive use, RStudio availability, and output format in RMarkdown or Quarto documents. Users can call \code{print(x, output="markdown")} to print the table in a specific format. Alternatively, they can set a global option: \code{options("tinytable_print_output"="markdown")}
@@ -85,5 +90,8 @@ tt(x, notes = "Hello World!")
 fn <- list(i = 0:1, j = 2, text = "Hello World!")
 tab <- tt(x, notes = list("*" = fn))
 print(tab, "latex")
+
+k <- data.frame(x = c(0.000123456789, 12.4356789))
+tt(k, digits=2)
 
 }

@@ -6,24 +6,29 @@
 \usage{
 format_tt(
   x,
+  i = NULL,
   j = NULL,
-  digits = getOption("digits"),
-  num_fmt = "significant",
-  num_zero = TRUE,
-  num_suffix = FALSE,
-  num_mark_big = "",
-  num_mark_dec = getOption("OutDec", default = "."),
+  digits = getOption("tinytable_format_digits", default = NULL),
+  num_fmt = getOption("tinytable_format_num_fmt", default = "significant"),
+  num_zero = getOption("tinytable_format_num_zero", default = FALSE),
+  num_suffix = getOption("tinytable_format_num_suffix", default = FALSE),
+  num_mark_big = getOption("tinytable_format_num_mark_big", default = ""),
+  num_mark_dec = getOption("tinytable_format_num_mark_dec", default = getOption("OutDec",
+    default = ".")),
   date = "\%Y-\%m-\%d",
   bool = function(column) tools::toTitleCase(tolower(column)),
   other = as.character,
   replace_na = "",
   escape = FALSE,
   markdown = FALSE,
+  fn = NULL,
   sprintf = NULL
 )
 }
 \arguments{
 \item{x}{A data frame or a vector to be formatted.}
+
+\item{i}{Row indices where the formatting should be applied.}
 
 \item{j}{Column indices where the styling should be applied. Can be:
 \itemize{
@@ -34,7 +39,7 @@ format_tt(
 
 \item{digits}{Number of significant digits or decimal places.}
 
-\item{num_fmt}{The format for numeric values; one of 'significant', 'decimal', or 'scientific'.}
+\item{num_fmt}{The format for numeric values; one of 'significant', 'significant_cell', 'decimal', or 'scientific'.}
 
 \item{num_zero}{Logical; if TRUE, trailing zeros are kept in "decimal" format (but not in "significant" format).}
 
@@ -52,9 +57,15 @@ format_tt(
 
 \item{replace_na}{String to display for missing values.}
 
-\item{escape}{Logical or String; if TRUE, escape special characters to display them as text in the format of the output of a \code{tt()} table. If \code{format_tt()} is called as a standalone function instead of on a \code{tt()} table, the \code{escape} argument accepts strings to specify the escaping method: "latex" or "html".}
+\item{escape}{Logical or "latex" or "html". If TRUE, escape special characters to display them as text in the format of the output of a \code{tt()} table.
+\itemize{
+\item If \code{i} is \code{NULL}, escape the \code{j} columns and column names.
+\item If \code{i} and \code{j} are both \code{NULL}, escape all cells, column names, caption, notes, and spanning labels created by \code{group_tt()}.
+}}
 
 \item{markdown}{Logical; if TRUE, render markdown syntax in cells. Ex: \verb{_italicized text_} is properly italicized in HTML and LaTeX.}
+
+\item{fn}{Function for custom formatting. Accepts a vector and returns a character vector of the same length.}
 
 \item{sprintf}{String passed to the \code{?sprintf} function to format numbers or interpolate strings with a user-defined pattern (similar to the \code{glue} package, but using Base R).}
 }
@@ -65,6 +76,7 @@ A data frame with formatted columns.
 This function formats the columns of a data frame based on the column type (logical, date, numeric).
 It allows various formatting options like significant digits, decimal points, and scientific notation.
 It also includes custom formatting for date and boolean values.
+If this function is applied several times to the same cell, the last transformation is retained and the previous calls are ignored, except for the \code{escape} argument which can be applied to previously transformed data.
 }
 \examples{
 dat <- data.frame(
@@ -75,5 +87,32 @@ format_tt(tab,
  digits = 2,
  num_mark_dec = ",",
  num_mark_big = " ")
+ 
+k <- tt(data.frame(x = c(0.000123456789, 12.4356789)))
+format_tt(k, digits = 2, num_fmt = "significant_cell")
+ 
+dat <- data.frame(
+   a = c("Burger", "Halloumi", "Tofu", "Beans"),
+   b = c(1.43202, 201.399, 0.146188, 0.0031),
+   c = c(98938272783457, 7288839482, 29111727, 93945))
+tt(dat) |>
+ format_tt(j = "a", sprintf = "Food: \%s") |>
+ format_tt(j = 2, digits = 1, num_fmt = "decimal", num_zero = TRUE) |>
+ format_tt(j = "c", digits = 2, num_suffix = TRUE)
+ 
+y <- tt(data.frame(x = c(123456789.678, 12435.6789)))
+format_tt(y, digits=3, num_mark_big=" ")
+
+x <- tt(data.frame(Text = c("_italicized text_", "__bold text__")))
+format_tt(x, markdown=TRUE)
+
+tab <- data.frame(a = c(NA, 1, 2), b = c(3, NA, 5))
+tt(tab) |> format_tt(replace_na = "-")
+
+dat <- data.frame(
+   "LaTeX" = c("Dollars $", "Percent \%", "Underscore _"),
+   "HTML" = c("<br>", "<sup>4</sup>", "<emph>blah</emph>")
+)
+tt(dat) |> format_tt(escape = TRUE)   
 
 }

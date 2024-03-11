@@ -3,7 +3,10 @@
 #' @inheritParams style_tt
 #' @keywords internal
 #' @noRd
-style_bootstrap <- function(x,
+setMethod(
+  f = "style_eval",
+  signature = "tinytable_bootstrap",
+  definition = function(x,
                             i = NULL,
                             j = NULL,
                             bold = FALSE,
@@ -28,17 +31,14 @@ style_bootstrap <- function(x,
                             bootstrap_css_rule = NULL,
                             ...) {
 
+  out <- x@table_string
 
-  if (meta(x, "output") != "html") return(x)
-
-  out <- x
-
-  ival <- if (is.null(i)) seq_len(meta(x, "nrows")) else i
-  jval <- if (is.null(j)) seq_len(meta(x, "ncols")) else j
+  ival <- if (is.null(i)) seq_len(nrow(x)) else i
+  jval <- if (is.null(j)) seq_len(ncol(x)) else j
 
   # only columns means we also want to style headers 
   if (is.null(i) && !is.null(j)) {
-    ival <- c(-1 * rev(seq_len(meta(x)$nhead) - 1), ival)
+    ival <- c(-1 * rev(seq_len(x@nhead) - 1), ival)
   }
 
 
@@ -50,7 +50,7 @@ style_bootstrap <- function(x,
 
   # JS 0-indexing
   settings$j <- settings$j - 1
-  settings$i <- settings$i - 1 + meta(x, "nhead")
+  settings$i <- settings$i - 1 + x@nhead
 
 
   # settings have a different size for latex, so bootstrap breaks
@@ -76,6 +76,7 @@ style_bootstrap <- function(x,
 
   if (!is.null(align)) {
     align_bootstrap <- ifelse(align == "c", "center", align)
+    align_bootstrap <- ifelse(align == "d", "center", align_bootstrap)
     align_bootstrap <- ifelse(align == "l", "left", align_bootstrap)
     align_bootstrap <- ifelse(align == "r", "right", align_bootstrap)
   } else {
@@ -131,25 +132,25 @@ style_bootstrap <- function(x,
   # CSS style for cell
   css_done <- NULL
   for (row in seq_len(nrow(settings))) {
-    # Listener applies the styling to columns
-    listener <- "window.addEventListener('load', function () { styleCell_%s(%s, %s, '%s') })"
-    listener <- sprintf(listener, settings$id[row], settings$i[row], settings$j[row], settings$id[row])
-    out <- bootstrap_setting(out, listener, component = "cell")
-
-    if (rowspan != 1 || colspan != 1) {
-      listener <- "window.addEventListener('load', function () { spanCell_%s(%s, %s, %s, %s) })"
-      listener <- sprintf(listener, settings$id[row], settings$i[row], settings$j[row], rowspan, colspan)
+    if (settings$bootstrap[row] != "" || !is.null(bootstrap_css)) {
+      # Listener applies the styling to columns
+      listener <- "window.addEventListener('load', function () { styleCell_%s(%s, %s, '%s') })"
+      listener <- sprintf(listener, settings$id[row], settings$i[row], settings$j[row], settings$id[row])
       out <- bootstrap_setting(out, listener, component = "cell")
-    }
-
-    # CSS styling
-    css <- paste(bootstrap_css, settings$bootstrap[row], collapse = ";")
-    css_start <- sprintf(".table td.%s, .table th.%s { ", settings$id[row], settings$id[row])
-    css_complete <- paste(c(css_start, css, "}"), collapse = " ")
-    # hack: avoid css duplication
-    if (!css_complete %in% css_done) {
-      out <- bootstrap_setting(out, css_complete, component = "css")
-      css_done <- c(css_done, css_complete)
+      if (rowspan != 1 || colspan != 1) {
+        listener <- "window.addEventListener('load', function () { spanCell_%s(%s, %s, %s, %s) })"
+        listener <- sprintf(listener, settings$id[row], settings$i[row], settings$j[row], rowspan, colspan)
+        out <- bootstrap_setting(out, listener, component = "cell")
+      }
+      # CSS styling
+      css <- paste(bootstrap_css, settings$bootstrap[row], collapse = ";")
+      css_start <- sprintf(".table td.%s, .table th.%s { ", settings$id[row], settings$id[row])
+      css_complete <- paste(c(css_start, css, "}"), collapse = " ")
+      # hack: avoid css duplication
+      if (!css_complete %in% css_done) {
+        out <- bootstrap_setting(out, css_complete, component = "css")
+        css_done <- c(css_done, css_complete)
+      }
     }
   }
 
@@ -157,15 +158,16 @@ style_bootstrap <- function(x,
     out <- bootstrap_setting(out, bootstrap_css_rule, component = "css")
   }
 
+  # Changing function names to table ID to avoid conflict with other tables functions 
+  out <- gsub("styleCell_\\w+\\(", paste0("styleCell_", x@id, "("), out)
+  out <- gsub("spanCell_\\w+\\(", paste0("spanCell_", x@id, "("), out)
+
+  x@table_string <- out
+
   if (!is.null(bootstrap_class)) {
-    out <- meta(out, "bootstrap_class", bootstrap_class)
+    x@bootstrap_class <- bootstrap_class
   }
 
-  # Changing function names to table ID to avoid conflict with other tables functions 
-  out <- gsub("styleCell_\\w+\\(", paste0("styleCell_", meta(x, "id"), "("), out)
-  out <- gsub("spanCell_\\w+\\(", paste0("spanCell_", meta(x, "id"), "("), out)
-
-  class(out) <- class(x)
-  return(out)
-}
+  return(x)
+})
 

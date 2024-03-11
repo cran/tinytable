@@ -54,7 +54,26 @@ tab <- tt(mtcars[1:8, 1:3]) |>
   style_tt(i = 8, bold = TRUE)
 expect_snapshot_print(tab, label = "markdown-group_i_style_tt")
 
+# Test bold columns
+tab <- tt(mtcars[1:8, 1:5]) |>
+  style_tt(j = c(2, 4), bold = TRUE)
+expect_snapshot_print(tab, label = "markdown-bold_columns")
 
+
+# Test replace missing value
+tab <- mtcars[1:4, 1:3]
+tab[2,3]=NA
+tab<-tt(tab)|>
+  format_tt(replace_na = "-")
+expect_snapshot_print(tab, label = "markdown-missing_value")
+
+
+# Test footnote
+x <- mtcars[1:3, 1:3]
+n <- list("Blah blah", "*" = list(i = 0:1, j = 2, text = "foo bar"))
+tab <- tt(x, notes = n)
+
+expect_snapshot_print(tab, label = "markdown-footnote")
 
 
 options(tinytable_print_output = NULL)

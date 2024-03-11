@@ -5,6 +5,8 @@
 
 #figure(
   $TINYTABLE_TYPST_CAPTION
+  kind: "tinytable",
+  supplement: none,
   tablex(
     columns: ncol,
     header-rows: nhead,
@@ -19,7 +21,6 @@
     },
 
     // tinytable cell content after
-
   ) // end tablex
 ) // end figure
 

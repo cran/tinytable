@@ -4,97 +4,94 @@
 #
 # THE ORDER MATTERS A LOT!
 build_tt <- function(x, output = NULL) {
-  m <- meta(x)
 
-  output <- sanitize_output(output)
-  out <- x
-  out <- meta(out, "output", output)
+  x@output <- sanitize_output(output)
+
+  x <- switch(x@output,
+    html = swap_class(x, "tinytable_bootstrap"),
+    latex = swap_class(x, "tinytable_tabularray"),
+    markdown = swap_class(x, "tinytable_grid"),
+    typst = swap_class(x, "tinytable_typst")
+  )
+
+  # groups must increment indices here
+  for (idx in seq_along(x@lazy_group)) {
+    l <- x@lazy_group[[idx]]
+    x@nrow <- x@nrow + length(l$i)
+    if (length(l$j) > 0) {
+      x@nhead <- x@nhead + 1
+    }
+  }
+
+  tab <- x@table_dataframe
+
+  # strip ANSI from `tibble`/`pillar`
+  if (isTRUE(check_dependency("fansi"))) {
+    for (col in seq_along(tab)) {
+      if (isTRUE(x@output == "html")) {
+        tab[[col]] <- as.character(fansi::to_html(tab[[col]], warn = FALSE))
+      } else {
+        tab[[col]] <- as.character(fansi::strip_ctl(tab[[col]]))
+      }
+    }
+  }
+  x@table_dataframe <- tab
 
   # format data before drawing the table
-  for (l in m$lazy_format) {
-    tmp <- out
-    class(tmp) <- "data.frame"
-    l[["x"]] <- tmp
-    out <- eval(l)
+  for (l in x@lazy_format) {
+    l[["x"]] <- x
+    x <- eval(l)
   }
 
   # add footnote markers just after formatting, otherwise appending converts to string
-  out <- footnote_markers(out)
+  x <- footnote_markers(x)
 
   # plots and images
-  for (l in m$lazy_plot) {
-    tmp <- out
-    class(tmp) <- "data.frame"
-    l[["x"]] <- tmp
-    out <- eval(l)
+  for (l in x@lazy_plot) {
+    l[["x"]] <- x
+    x <- eval(l)
   }
 
   # markdown styles need to be applied before creating the table, otherwise there's annoying parsing, etc.
-  if (output == "markdown") {
-    for (l in m$lazy_style) {
-      l[["x"]] <- out
-      out <- eval(l)
+  if (x@output == "markdown") {
+    for (l in x@lazy_style) {
+      l[["x"]] <- x
+      x <- eval(l)
     }
   }
-
-  # shouldn't have to add this everywhere, but I'm too lazy to check
-  out <- meta(out, "output", output)
 
   # draw the table
-  lazy_tt <- meta(x, "lazy_tt")
-  lazy_tt[["x"]] <- out
-  if (output == "html") {
-    lazy_tt[[1]] <- quote(tt_bootstrap)
-  } else if (output == "latex") {
-    lazy_tt[[1]] <- quote(tt_tabularray)
-  } else if (output == "markdown") {
-    lazy_tt[[1]] <- quote(tt_grid)
-  } else if (output == "typst") {
-    lazy_tt[[1]] <- quote(tt_typst)
-  }
-  out <- eval(lazy_tt)
-  out <- meta(out, "output", output)
+  x <- tt_eval(x)
 
-  for (idx in seq_along(m$lazy_group)) {
-    l <- m$lazy_group[[idx]]
-    l[["x"]] <- out
-    l[["ihead"]] <- -1 * idx
-    if (output == "html") {
-      l[[1]] <- quote(group_bootstrap)
-    } else if (output == "latex") {
-      l[[1]] <- quote(group_tabularray)
-    } else if (output == "markdown") {
-      l[[1]] <- quote(group_grid)
-    } else if (output == "typst") {
-      l[[1]] <- quote(group_typst)
+  ihead <- 0
+  for (idx in seq_along(x@lazy_group)) {
+    l <- x@lazy_group[[idx]]
+    l[["x"]] <- x
+    if (length(l[["j"]]) > 0) {
+      ihead <- ihead - 1
+      l[["ihead"]] <- ihead
     }
-    out <- eval(l)
+    x <- eval(l)
   }
-  out <- meta(out, "output", output)
 
   # style the table
-  if (output == "typst") {
+  if (x@output == "typst") {
     # rules of precedence appear to differ
-    m$lazy_style <- rev(m$lazy_style)
+    x@lazy_style <- rev(x@lazy_style)
   }
-  if (output != "markdown") {
-    for (l in m$lazy_style) {
-      l[["x"]] <- out
-      out <- eval(l)
+
+  if (x@output != "markdown") {
+    for (l in x@lazy_style) {
+      l[["x"]] <- x
+      x <- eval(l)
     }
   }
 
-  # finalize 
-  out <- finalize_bootstrap(out)
-  out <- finalize_typst(out)
-  out <- finalize_grid(out)
+  x <- finalize(x)
 
-  m <- meta(x)
-  m$lazy_style <- list()
-  attr(out, "tinytable_meta") <- m
-  out <- meta(out, "output", output)
+  x@table_string <- lines_drop_consecutive_empty(x@table_string)
 
-  return(out)
+  return(x)
 }
 
 

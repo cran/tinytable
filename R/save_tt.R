@@ -10,38 +10,40 @@
 #' @return A string or `TRUE` when the table is written to file.
 #' @export
 #' @examples
+#' library(tinytable)
+#' x <- mtcars[1:4, 1:5]
+#' 
+#' fn <- file.path(tempdir(), "test.html")
+#' tt(x) |> save_tt(fn, overwrite = TRUE)
 #'
 #' library(tinytable)
 #' filename <- file.path(tempdir(), "table.tex")
 #' tt(mtcars[1:4, 1:4]) |> save_tt(filename)
 #'
 save_tt <- function(x, output, overwrite = FALSE) {
-  m <- meta(x)
-
+  assert_class(x, "tinytable")
   assert_string(output)
   assert_flag(overwrite)
+
   if (file.exists(output) && !overwrite) {
     stop("File already exists and overwrite is set to FALSE.", call. = FALSE)
   }
-  if (is.null(m)) {
-    stop("`x` must be an object produced by the `tinytable::tt()` function.", call. = FALSE)
-  }
 
   if (identical(output, "markdown")) {
-    out <- build_tt(x, output = "markdown")
+    out <- build_tt(x, output = "markdown")@table_string
     return(as.character(out))
   } else if (identical(output, "html")) {
-    out <- build_tt(x, output = "html")
+    out <- build_tt(x, output = "html")@table_string
     return(as.character(out))
   } else if (identical(output, "latex")) {
-    out <- build_tt(x, output = "latex")
+    out <- build_tt(x, output = "latex")@table_string
     return(as.character(out))
   } else if (identical(output, "typst")) {
-    out <- build_tt(x, output = "typst")
+    out <- build_tt(x, output = "typst")@table_string
     return(as.character(out))
   }
 
-  x <- meta(x, "output_dir", dirname(output))
+  x@output_dir <- dirname(output)
 
   file_ext <- tools::file_ext(output)
 
@@ -62,14 +64,14 @@ save_tt <- function(x, output, overwrite = FALSE) {
   x <- build_tt(x, output = output_format)
 
   if (file_ext %in% c("html", "tex", "md", "Rmd", "qmd", "txt", "typ")) {
-    write(x, file = output)
+    write(x@table_string, file = output)
 
   } else if (file_ext == "png") {
     assert_dependency("webshot2")
     # this doesn't work in tempdir() for some reason.
     # probably webshot2's fault. we need to build in `output`
     tmp <- file.path(dirname(output), paste0(get_id(), ".html"))
-    write(x, file = tmp)
+    write(x@table_string, file = tmp)
     webshot2::webshot(tmp,
       file = output,
       selector = "body > div > table",
@@ -80,7 +82,7 @@ save_tt <- function(x, output, overwrite = FALSE) {
   } else if (file_ext == "pdf") {
     assert_dependency("tinytex")
     # \documentclass{standalone} does not support \begin{table}
-    tmp <- strsplit(x, "\\n")[[1]]
+    tmp <- strsplit(x@table_string, "\\n")[[1]]
     tmp <- tmp[!grepl("\\begin{table}", tmp, fixed = TRUE)]
     tmp <- tmp[!grepl("\\end{table}", tmp, fixed = TRUE)]
     tmp <- paste(tmp, collapse = "\n")
@@ -97,11 +99,7 @@ save_tt <- function(x, output, overwrite = FALSE) {
 
   } else if (file_ext == "docx") {
     assert_dependency("pandoc")
-    if (pandoc::pandoc_version() < "3.0.0.0") {
-      msg <- "A version of `pandoc` greater than 3.0.0.0 is highly recommended to use this feature."
-      warning(msg, call. = FALSE)
-    }
-    pandoc::pandoc_convert(text = x, to = "docx", output = output)
+    pandoc::pandoc_convert(text = x@table_string, to = "docx", output = output)
   }
 
   return(invisible(TRUE))
@@ -119,6 +117,7 @@ latex_standalone <- "
 \\usepackage{codehigh}
 \\usepackage[normalem]{ulem}
 \\UseTblrLibrary{booktabs}
+\\UseTblrLibrary{siunitx}
 \\newcommand{\\tinytableTabularrayUnderline}[1]{\\underline{#1}}
 \\newcommand{\\tinytableTabularrayStrikeout}[1]{\\sout{#1}}
 \\NewTableCommand{\\tinytableDefineColor}[3]{\\definecolor{#1}{#2}{#3}}
