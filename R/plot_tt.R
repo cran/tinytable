@@ -12,7 +12,8 @@
 #' @param asp Numeric, aspect ratio of the plots (height / width). 
 #' @param color string Name of color to use for inline plots (passed to the `col` argument base `graphics` plots in `R`).
 #' @param xlim Numeric vector of length 2.
-#' @param fun  A function to generate plots from the data in `data`. Valid functions include:
+#' @param fun  String or function to generate inline plots.
+#' - String: "histogram", "density", "bar", "line"
 #' - Functions that return `ggplot2` objects.
 #' - Functions that return another function which generates a base `R` plot, ex: `function(x) {function() hist(x)}`
 #' - See the tutorial on the `tinytable` website for more information.
@@ -195,6 +196,10 @@ plot_tt_lazy <- function(x,
 
   } else if (isTRUE(x@output == "typst")) {
     cell <- '#image("%s")'
+    cell <- sprintf(cell, images)
+
+  } else if (isTRUE(x@output == "dataframe")) {
+    cell <- '%s'
     cell <- sprintf(cell, images)
 
   } else {

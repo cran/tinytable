@@ -1,7 +1,13 @@
 swap_class <- function(x, new_class) {
   out <- methods::new(new_class)
   for (s in methods::slotNames(x)) {
-    methods::slot(out, s) <- methods::slot(x, s)
+    # modelsummary issue #727
+    tmp <- methods::slot(x, s)
+    if (inherits(tmp, "data.table")) {
+      assert_dependency("data.table")
+      data.table::setDT(tmp)
+    }
+    methods::slot(out, s) <- tmp
   }
   return(out)
 }
@@ -91,6 +97,21 @@ setMethod("ncol", "tinytable", function(x) return(x@ncol))
 #' @keywords internal
 setMethod("colnames", "tinytable", function(x) return(x@names))
 
+
+#' Method for a tinytable S4 object
+#' 
+#' @inheritParams tt
+#' @keywords internal
+setReplaceMethod("colnames",
+                 signature = "tinytable", 
+                 definition = function(x, value) {
+                   assert_character(value, len = length(x@names))
+                   x@names <- value
+                   return(x)
+                 }
+)
+
+
 #' Dimensions a tinytable S4 object
 #' 
 #' @inheritParams tt
@@ -116,6 +137,7 @@ setClass("tinytable_tabularray", contains = "tinytable")
 setClass("tinytable_bootstrap", contains = "tinytable")
 setClass("tinytable_typst", contains = "tinytable")
 setClass("tinytable_grid", contains = "tinytable")
+setClass("tinytable_dataframe", contains = "tinytable")
 
 #' Apply style settings to a tinytable
 #' 
@@ -152,3 +174,5 @@ setGeneric(
   name = "finalize",
   def = function(x, ...) standardGeneric("finalize")
 )
+
+
