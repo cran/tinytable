@@ -69,7 +69,7 @@ setMethod("initialize", "tinytable", function(
   .Object@nhead <- if (is.null(colnames(data))) 0 else 1
   .Object@names <- if (is.null(colnames(data))) character() else colnames(data)
   .Object@id <- get_id("tinytable_")
-  .Object@output <- "markdown"
+  .Object@output <- "tinytable"
   .Object@output_dir <- getwd()
   # conditional: allows NULL user input
   if (!is.null(placement)) .Object@placement <- placement
@@ -95,6 +95,7 @@ setMethod("ncol", "tinytable", function(x) return(x@ncol))
 #' 
 #' @inheritParams tt
 #' @keywords internal
+#' @export
 setMethod("colnames", "tinytable", function(x) return(x@names))
 
 
@@ -102,6 +103,7 @@ setMethod("colnames", "tinytable", function(x) return(x@names))
 #' 
 #' @inheritParams tt
 #' @keywords internal
+#' @export
 setReplaceMethod("colnames",
                  signature = "tinytable", 
                  definition = function(x, value) {

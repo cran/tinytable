@@ -57,9 +57,9 @@ print.tinytable <- function(x,
                             ...){
 
   if (is.null(output)) {
-    output <- x@output
+    output <- sanitize_output(x@output)
   } else {
-    assert_choice(output, c("latex", "markdown", "html", "typst", "dataframe"))
+    output <- sanitize_output(output)
   }
 
   if (output == "html") {
@@ -81,15 +81,18 @@ print.tinytable <- function(x,
     # for plot_tt() inline plots to show up in RStudio
     htmlFile <- file.path(dir, "index.html")
     cat(tab, file = htmlFile)
-    if (isTRUE(check_dependency("rstudioapi")) && rstudioapi::isAvailable()) {
+
+    if (isTRUE(interactive()) && isTRUE(check_dependency("rstudioapi")) && rstudioapi::isAvailable()) {
       rstudioapi::viewer(htmlFile)
+
     } else if (interactive()) {
       msg <- "Please choose a default browser with:
 
       options(browser = 'firefox')
       "
-      if (isTRUE(getOption("browser") == "")) stop(msg, call. = FALSE)
+      if (identical(getOption("browser"), "")) stop(msg, call. = FALSE)
       utils::browseURL(htmlFile)
+
     } else {
       cat(tab, "\n")
     }
@@ -103,5 +106,5 @@ print.tinytable <- function(x,
 
 
 setMethod("show", "tinytable", function(object) {
-  print.tinytable(object, output = object@output)
+  print.tinytable(object, output = getOption("tinytable_print_output", default = NULL))
 })

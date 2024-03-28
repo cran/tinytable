@@ -1,8 +1,8 @@
-c234f14b9c0d505bc6a3ac0e18fd5046 *DESCRIPTION
-6c9289b3f915c9521798bfeace046ba8 *NAMESPACE
-c41da7335c651bf37c3aace170b6c40c *NEWS.md
-dfe5b91aa8a1d31c41badfe753291ffa *R/build_tt.R
-5b9efdd685f27308450659fda38d149e *R/class.R
+787cb4f9d512eb79c2242f656cf36127 *DESCRIPTION
+6d0e4be52381a9b57039d3d9f684c95f *NAMESPACE
+a0933a0d8ad1569ea111c0dad9f52a13 *NEWS.md
+24c4c3320ae08907649dbdc5319fdfa7 *R/build_tt.R
+ae834357baa264693e9b62efdedf157b *R/class.R
 b42c65468175eaecc066a2cfd0d14551 *R/escape.R
 668809dd455bcb9d2a2a38d86bea549c *R/finalize_bootstrap.R
 c08c6aff3b08bafae25818a098d47ee6 *R/finalize_grid.R
@@ -16,9 +16,9 @@ aacf4f77227b535ed0abccdf131b25a2 *R/group_tabularray.R
 b4746bd61cc33aa03727f26cf741bfd4 *R/group_tt.R
 e9f69a13c3082bc79631aebf48c6ebaf *R/group_typst.R
 fd96b60e6785fd46659017d22a6af27c *R/plot_tt.R
-0d52537d473b11ae2eb2f28f61894b4c *R/print.R
+0ad1cc9514d69aced095b329fe38dda3 *R/print.R
 606261fe0d8cb86837a666ce446b4c81 *R/rbind2.R
-dff9c911f2f59e8a7d09da84315e7a5f *R/sanity.R
+8d40cf2d5f4bb3c7bca0763a58bbd63d *R/sanity.R
 b0abfb4aae639fc53de0bfe49a096d86 *R/save_tt.R
 d36ab784cd8db27f876f224dbf30ef83 *R/style_bootstrap.R
 6247c1009b13e12554ecbeb1690e8c22 *R/style_grid.R
@@ -28,7 +28,7 @@ fdfe1d143360370cde60a802e204acc2 *R/style_grid_dataframe.R
 cff8432cf0b3cd2a5fb189841c1de24b *R/style_typst.R
 7128b5b95c099e7352c871864990cc1b *R/template.R
 c1f3191611d5e297d6a348bbf84460e3 *R/theme_tt.R
-0b93c97dd3c0a28249985b2c8d5a6ea4 *R/tt.R
+850be07dc0e7e5a1e95ab2948d1fb31e *R/tt.R
 778ca92871a52921ae1d91ab9821133d *R/tt_bootstrap.R
 1d654e050160d5eb5ff60825232e65f9 *R/tt_grid.R
 92827d779ac349e1e4b3c7b8acff8049 *R/tt_tabularray.R
@@ -36,7 +36,7 @@ c1f3191611d5e297d6a348bbf84460e3 *R/theme_tt.R
 cf2f4f1452b3710e745aed298dec4335 *R/utils.R
 90abaf435708bf2c8ace0d33dacc40a1 *R/zzz.R
 098847572cde6cc86ea7d108f56489ef *README.md
-10379319e8d2c1f12d7d13575b7b3463 *build/partial.rdb
+7cc92f6fb9b8ccad9f3e3cab6bd49baf *build/partial.rdb
 46c7fd7d13afa7bc2d87030516948f3f *inst/COPYRIGHTS
 b5048759053a5210f809bb13a15da266 *inst/WORDLIST
 f314c39a9fa596a673e21bc575f9186a *inst/templates/bootstrap.html
@@ -152,7 +152,7 @@ acf5597fed7e42f8aa2e40da386344e8 *inst/tinytest/_tinysnapshot/typst-grid.txt
 a33873f869319163401794098f91ba7e *inst/tinytest/_tinysnapshot/typst-no_headers.txt
 891c4169fc016f14337b834b6932e994 *inst/tinytest/_tinysnapshot/typst-significant_cell.txt
 a6544cbbcec45f6610ee94968c081a89 *inst/tinytest/_tinysnapshot/typst-striped.txt
-cbf55790bfff3ea5ae2cbded7653f761 *inst/tinytest/helpers.R
+2c117f07a20fb3271c6ad960a2eda992 *inst/tinytest/helpers.R
 545f19d296fd0cb19c74846ecd7d13ac *inst/tinytest/test-colrowspan.R
 be925f558aee702400c40a08f68dc762 *inst/tinytest/test-docx.R
 644fad9d18a0cf391c4cc22149fb52ea *inst/tinytest/test-escape.R
@@ -162,8 +162,10 @@ ce236b2f8a56855ef11bad18620350d7 *inst/tinytest/test-format_tt.R
 7075c0f1d8b909300b8708f3b956e344 *inst/tinytest/test-i_j.R
 c19ad273a2e3480f93ad3dd3cdaf8e97 *inst/tinytest/test-latex.R
 6b3d86e07b882c036a70c307d77477cc *inst/tinytest/test-markdown.R
+cb1563005c46de31c570d6ecd5e42b07 *inst/tinytest/test-misc.R
 9b3ec6a16cdd332a1223ac13124c864d *inst/tinytest/test-notes.R
 eb2e7bcc19b03b327aca1213208619e6 *inst/tinytest/test-plot_tt.R
+4fa2640943a7e160cf8085a8fb5b5bb1 *inst/tinytest/test-print.R
 93b23957d22b5467f9df02db04b0499f *inst/tinytest/test-theme.R
 8c08bfe0a38c9d71d84de00e194965d2 *inst/tinytest/test-tibble.R
 0245bae4f6e18c5d48572bfcf16c8ca4 *inst/tinytest/test-typst.R
