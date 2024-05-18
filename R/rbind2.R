@@ -34,7 +34,7 @@
 #' # basic combination
 #' rbind(x, y)
 #' 
-#' rbind(x, y) |> format_tt(replace_na = "")
+#' rbind(x, y) |> format_tt(replace = "")
 #' 
 #' # omit y header
 #' rbind2(x, y, headers = FALSE)
@@ -45,7 +45,7 @@
 #' @importFrom methods rbind2
 #' @export
 setMethod("rbind2", 
-          signature = "tinytable", 
+          signature = signature(x = "tinytable", y = "tinytable"), 
           definition = function(x, y, 
                                 use_names = TRUE,
                                 headers = TRUE,

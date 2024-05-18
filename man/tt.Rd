@@ -17,9 +17,9 @@ tt(
 \arguments{
 \item{x}{A data frame or data table to be rendered as a table.}
 
-\item{digits}{Number of significant digits to keep for numeric variables. When \code{digits} is an integer, \code{tt()} calls \code{format_tt(x, digits = digits)} before proceeding to draw the table. Users who need more control can use the \code{format_tt()} function.}
+\item{digits}{Number of significant digits to keep for numeric variables. When \code{digits} is an integer, \code{tt()} calls \code{format_tt(x, digits = digits)} before proceeding to draw the table. Note that this will apply all default argument values of \code{format_tt()}, such as replacing \code{NA} by "". Users who need more control can use the \code{format_tt()} function instead.}
 
-\item{caption}{A string that will be used as the caption of the table.}
+\item{caption}{A string that will be used as the caption of the table. This argument should \emph{not} be used in Quarto or Rmarkdown documents. In that context, please use the appropriate chunk options.}
 
 \item{notes}{Notes to append to the bottom of the table. This argument accepts several different inputs:
 \itemize{
@@ -29,7 +29,11 @@ tt(
 \item A named list with positions inserts markers as superscripts inside table cells: \code{list("a" = list(i = 0:1, j = 2, text = "Hello World"))}
 }}
 
-\item{width}{A numeric value between 0 and 1 indicating the proportion of the line width that the table should cover.}
+\item{width}{Table or column width.
+\itemize{
+\item Single numeric value smaller than or equal to 1 determines the full table width, in proportion of line width.
+\item Numeric vector of length equal to the number of columns in \code{x} determines the width of each column, in proportion of line width. If the sum of \code{width} exceeds 1, each element is divided by \code{sum(width)}. This makes the table full-width with relative column sizes.
+}}
 
 \item{theme}{Function or string.
 \itemize{
@@ -71,6 +75,23 @@ When rendering Quarto and Rmarkdown documents, \code{tinytable} will populate th
 \newcommand{\tinytableTabularrayStrikeout}[1]\{\\sout\{#1\}\}
 \\NewTableCommand\{\\tinytableDefineColor\}[3]\{\\definecolor\{#1\}\{#2\}\{#3\}\}
 }\if{html}{\out{</div>}}
+}
+
+\section{Global options}{
+
+\subsection{Quarto data processing}{
+
+\code{options(tinytable_quarto_disable_processing = TRUE)}
+
+Disable Quarto processing of cell content. Setting this global option to \code{FALSE} may lead to conflicts with some \code{tinytable} features, but it also allows use of markdown and Quarto-specific code in table cells, such as cross-references.
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{x <- data.frame(Math = "x^2^", Citation = "@Lovelace1842")
+fn <- function(z) sprintf("<span data-qmd='\%s'></span>", z)
+tt(x) |> format_tt(i = 1, fn = fn)
+}\if{html}{\out{</div>}}
+
+See this link for more details: https://quarto.org/docs/authoring/tables.html#disabling-quarto-table-processing
+}
 }
 
 \examples{

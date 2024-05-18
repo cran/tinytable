@@ -86,19 +86,19 @@ save_tt <- function(x, output, overwrite = FALSE) {
     assert_dependency("tinytex")
     # \documentclass{standalone} does not support \begin{table}
     tmp <- strsplit(x@table_string, "\\n")[[1]]
-    tmp <- tmp[!grepl("\\begin{table}", tmp, fixed = TRUE)]
-    tmp <- tmp[!grepl("\\end{table}", tmp, fixed = TRUE)]
+    # tmp <- tmp[!grepl("\\begin{table}", tmp, fixed = TRUE)]
+    # tmp <- tmp[!grepl("\\end{table}", tmp, fixed = TRUE)]
     tmp <- paste(tmp, collapse = "\n")
     tmp <- sprintf(latex_standalone, tmp)
     # tinytex is fiddly with file paths, so we need to hack 
     # it by changing the working directory
     wd <- getwd()
+    on.exit(setwd(wd))
     setwd(dirname(output))
     f <- paste0(get_id(), ".tex")
     write(tmp, f) 
     tinytex::xelatex(f, pdf_file = output)
     unlink(f)
-    setwd(wd)
 
   } else if (file_ext == "docx") {
     assert_dependency("pandoc")
@@ -124,6 +124,8 @@ latex_standalone <- "
 \\newcommand{\\tinytableTabularrayStrikeout}[1]{\\sout{#1}}
 \\NewTableCommand{\\tinytableDefineColor}[3]{\\definecolor{#1}{#2}{#3}}
 \\begin{document}
+\\minipage{\\textwidth}
 %s
+\\endminipage
 \\end{document}
 "

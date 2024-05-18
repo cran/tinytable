@@ -1,5 +1,55 @@
 # News
 
+## 0.3.0
+
+Breaking change:
+
+* The `width` argument is moved from `style_tt()` to `tt()`.
+
+`tt()`:
+
+* `width` argument now accepts a vector of numeric values to control the width of each column, as a proportion of the total linewidth.
+
+`format_tt()`:
+
+* New `quarto` argument enables Quarto data processing for the whole table and marks specific cells as containing Quarto content. This is especially useful to include @Citation1981 in a table. Thanks to @andrewheiss for issue #215 and @giabaio for further discussion and debugging.
+* New `replace` argument which accepts a single logical, a single string, or a named list to specify multiple replacements.
+* `replace=TRUE` by default replaces `NA` by an empty string. `FALSE` prints "NA" as string.
+* `replace_na` is deprecated in favor of `replace`. Backward compatibility is maintained and a warning is issued.
+* All arguments can now be set using global options.
+
+`theme_tt()`:
+
+* "void" is now supported for Typst tables. Thanks to @marcboschmatas for PR #223.
+
+`style_tt()`:
+
+* No longer keep many versions of the same data frame, which could increase memory use. Thanks to @MarcoPortmann for the report.
+
+`save_tt()`:
+
+* Do not change working directory when saving to file raises an error. Thanks to @etiennebacher for report #225.
+
+Typst:
+
+* Better compatibility with Quarto captions. Recommended strategy is to *not* use the `caption` argument, and rather to define *both* the `label` and `tbl-cap` chunk options in Quarto. This is a breaking change, as Typst tables are no longer enclosed in a `#figure` environment in Quarto documents when both `tbl-cap` and `label` chunk options are defined.
+* `format_tt(escape=TRUE)` escapes square brackets.
+* Tables are centered by default.
+
+Misc:
+
+* Support `beamer_presentations`, but see: https://github.com/vincentarelbundock/tinytable/issues/244
+* Table objects can be modified and printed several times ---with styling--- in a single HTML document like a ReavealJS slideshow. Thanks to @kazuyanagimoto for report #759.
+* Global option to enable Quarto data processing: `options(tinytable_quarto_disable_processing = FALSE)`. Thanks to @andrewheiss for issue #215.
+
+Bug fixes:
+
+* Data frames without column headers could be displayed as "c(1,2,3,3)". Bug in `format_tt()`. Issue #230.
+* `save_tt()` can now save to PDF when the table includes a caption. Thanks to @etiennebacher for report #224.
+* `group_tt(i)` inserted an extra latex column, which made horizontal lines stop to early. Thanks to @andrewheiss for report #235.
+* Multiple unnamed footnotes allowed in LaTeX tabularray. Issue #242.
+
+
 ## 0.2.1
 
 * RStudio displays table in HTML viewer by default when the `rstudioapi` package is available.

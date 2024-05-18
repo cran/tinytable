@@ -25,11 +25,11 @@ lines_drop_consecutive_empty <- function(x) {
 }
 
 
-lines_drop <- function(old, regex, position = "equal") {
-  assert_choice(position, c("equal", "before", "after"))
+lines_drop <- function(old, regex, position = "equal", fixed = FALSE) {
+  assert_choice(position, c("equal", "before", "after", "all"))
   lines <- strsplit(old, "\n")[[1]]
-  idx <- grep(regex, lines)
-  if (length(idx) > 1) {
+  idx <- grep(regex, lines, fixed = fixed)
+  if (length(idx) > 1 && position != "all") {
     stop("The `regex` supplied `lines_drop()` did not match a unique line.", call. = FALSE)
   }
   if (!anyNA(idx)) {
@@ -39,9 +39,31 @@ lines_drop <- function(old, regex, position = "equal") {
       lines <- lines[idx:length(lines)]
     } else if (position == "after") {
       lines <- lines[1:idx]
+    } else if (position == "all") {
+      lines <- lines[!seq_along(lines) %in% idx]
     }
   }
   out <- paste(lines, collapse = "\n")
+  return(out)
+}
+
+
+lines_drop_between <- function(text, regex_start, regex_end, fixed = FALSE) {
+  lines <- strsplit(text, "\n")[[1]]
+  idx_start <- grep(regex_start, lines, fixed = fixed)
+  idx_end <- grep(regex_end, lines, fixed = fixed)
+  if (length(idx_start) != 1) {
+    stop("The `regex_start` did not match a unique line.", call. = FALSE)
+  }
+  if (length(idx_end) != 1) {
+    stop("The `regex_end` did not match a unique line.", call. = FALSE)
+  }
+  if (idx_start >= idx_end) {
+    stop("`regex_start` matches a line after `regex_end`.", call. = FALSE)
+  }
+  lines_to_keep <- c(1:(idx_start-1), (idx_end+1):length(lines))
+  output <- lines[lines_to_keep]
+  out <- paste(output, collapse = "\n")
   return(out)
 }
 

@@ -15,14 +15,17 @@ format_tt(
   num_mark_big = getOption("tinytable_format_num_mark_big", default = ""),
   num_mark_dec = getOption("tinytable_format_num_mark_dec", default = getOption("OutDec",
     default = ".")),
-  date = "\%Y-\%m-\%d",
-  bool = function(column) tools::toTitleCase(tolower(column)),
-  other = as.character,
-  replace_na = "",
-  escape = FALSE,
-  markdown = FALSE,
-  fn = NULL,
-  sprintf = NULL
+  date = getOption("tinytable_format_date", default = "\%Y-\%m-\%d"),
+  bool = getOption("tinytable_format_bool", default = function(column)
+    tools::toTitleCase(tolower(column))),
+  other = getOption("tinytable_format_other", default = as.character),
+  replace = getOption("tinytable_format_replace", default = TRUE),
+  escape = getOption("tinytable_format_escape", default = FALSE),
+  markdown = getOption("tinytable_format_markdown", default = FALSE),
+  quarto = getOption("tinytable_format_quarto", default = FALSE),
+  fn = getOption("tinytable_format_fn", default = NULL),
+  sprintf = getOption("tinytable_format_sprintf", default = NULL),
+  ...
 )
 }
 \arguments{
@@ -55,7 +58,16 @@ format_tt(
 
 \item{other}{A function to format columns of other types. Defaults to \code{as.character()}.}
 
-\item{replace_na}{String to display for missing values.}
+\item{replace}{Logical, String or Named list of vectors
+\itemize{
+\item TRUE: Replace \code{NA} by an empty string.
+\item FALSE: Print \code{NA} as the string "NA".
+\item String: Replace \code{NA} entries by the user-supplied string.
+\item Named list: Replace matching elements of the vectors in the list by theirs names. Example:
+\itemize{
+\item \code{list("-" = c(NA, NaN), "Tiny" = -Inf, "Massive" = Inf)}
+}
+}}
 
 \item{escape}{Logical or "latex" or "html". If TRUE, escape special characters to display them as text in the format of the output of a \code{tt()} table.
 \itemize{
@@ -65,9 +77,13 @@ format_tt(
 
 \item{markdown}{Logical; if TRUE, render markdown syntax in cells. Ex: \verb{_italicized text_} is properly italicized in HTML and LaTeX.}
 
+\item{quarto}{Logical. Enable Quarto data processing and wrap cell content in a \code{data-qmd} span (HTML) or \verb{\\QuartoMarkdownBase64\{\}} macro (LaTeX). Warning: Quarto data processing can enter in conflict with \code{tinytable} styling or formatting options. See global options section below.}
+
 \item{fn}{Function for custom formatting. Accepts a vector and returns a character vector of the same length.}
 
 \item{sprintf}{String passed to the \code{?sprintf} function to format numbers or interpolate strings with a user-defined pattern (similar to the \code{glue} package, but using Base R).}
+
+\item{...}{Additional arguments are ignored.}
 }
 \value{
 A data frame with formatted columns.
@@ -78,6 +94,23 @@ It allows various formatting options like significant digits, decimal points, an
 It also includes custom formatting for date and boolean values.
 If this function is applied several times to the same cell, the last transformation is retained and the previous calls are ignored, except for the \code{escape} argument which can be applied to previously transformed data.
 }
+\section{Global options}{
+
+\subsection{Quarto data processing}{
+
+\code{options(tinytable_quarto_disable_processing = TRUE)}
+
+Disable Quarto processing of cell content. Setting this global option to \code{FALSE} may lead to conflicts with some \code{tinytable} features, but it also allows use of markdown and Quarto-specific code in table cells, such as cross-references.
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{x <- data.frame(Math = "x^2^", Citation = "@Lovelace1842")
+fn <- function(z) sprintf("<span data-qmd='\%s'></span>", z)
+tt(x) |> format_tt(i = 1, fn = fn)
+}\if{html}{\out{</div>}}
+
+See this link for more details: https://quarto.org/docs/authoring/tables.html#disabling-quarto-table-processing
+}
+}
+
 \examples{
 dat <- data.frame(
   a = rnorm(3, mean = 10000),
@@ -107,7 +140,7 @@ x <- tt(data.frame(Text = c("_italicized text_", "__bold text__")))
 format_tt(x, markdown=TRUE)
 
 tab <- data.frame(a = c(NA, 1, 2), b = c(3, NA, 5))
-tt(tab) |> format_tt(replace_na = "-")
+tt(tab) |> format_tt(replace = "-")
 
 dat <- data.frame(
    "LaTeX" = c("Dollars $", "Percent \%", "Underscore _"),

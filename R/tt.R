@@ -13,9 +13,11 @@
 #' `tinytable` attempts to determine the appropriate way to print the table based on interactive use, RStudio availability, and output format in RMarkdown or Quarto documents. Users can call `print(x, output="markdown")` to print the table in a specific format. Alternatively, they can set a global option: `options("tinytable_print_output"="markdown")`
 #'
 #' @param x A data frame or data table to be rendered as a table.
-#' @param digits Number of significant digits to keep for numeric variables. When `digits` is an integer, `tt()` calls `format_tt(x, digits = digits)` before proceeding to draw the table. Users who need more control can use the `format_tt()` function.
-#' @param caption A string that will be used as the caption of the table.
-#' @param width A numeric value between 0 and 1 indicating the proportion of the line width that the table should cover.
+#' @param digits Number of significant digits to keep for numeric variables. When `digits` is an integer, `tt()` calls `format_tt(x, digits = digits)` before proceeding to draw the table. Note that this will apply all default argument values of `format_tt()`, such as replacing `NA` by "". Users who need more control can use the `format_tt()` function instead.
+#' @param caption A string that will be used as the caption of the table. This argument should *not* be used in Quarto or Rmarkdown documents. In that context, please use the appropriate chunk options.
+#' @param width Table or column width. 
+#' - Single numeric value smaller than or equal to 1 determines the full table width, in proportion of line width. 
+#' - Numeric vector of length equal to the number of columns in `x` determines the width of each column, in proportion of line width. If the sum of `width` exceeds 1, each element is divided by `sum(width)`. This makes the table full-width with relative column sizes.
 #' @param theme Function or string.
 #' - String: `r paste(setdiff(names(theme_dictionary), "default"), collapse = ", ")`
 #' - Function: Applied to the `tinytable` object.
@@ -29,6 +31,7 @@
 #' 
 #' The table object has S4 slots which hold information about the structure of the table. This meta-data can be accessed with the usual `@` accessor. In general, modifying the content of these slots is not recommended, but it can be useful to some developers, such as those who want to force print to a specific output format without calling `print()`.
 #' @template latex_preamble
+#' @template global_options
 #' 
 #' @examples
 #' library(tinytable)
@@ -67,10 +70,8 @@ tt <- function(x,
 
   # sanity checks
   assert_string(caption, null.ok = TRUE)
-  assert_numeric(width, len = 1, lower = 0, upper = 1, null.ok = TRUE)
   assert_integerish(digits, len = 1, null.ok = TRUE)
   notes <- sanitize_notes(notes)
-
 
   # x should be a data frame, not a tibble or slopes, for indexing convenience
   assert_data_frame(x, min_rows = 1, min_cols = 1)
@@ -78,6 +79,15 @@ tt <- function(x,
     cn <- colnames(x)
     x <- as.data.frame(x, check.names = FALSE)
     colnames(x) <- cn
+  }
+
+  assert_numeric(width, lower = 0, null.ok = TRUE)
+  if (!length(width) %in% c(0, 1, ncol(x))) {
+      msg <- sprintf("The `width` argument must have length 1 or %s.", ncol(x))
+      stop(msg, call. = FALSE)
+  }
+  if (sum(width) > 1) {
+      width <- width / sum(width)
   }
 
   # formatting options are limited here
@@ -101,8 +111,11 @@ tt <- function(x,
     theme = list(theme),
     width = width)
 
-  out <- theme_tt(out, theme = "default")
-  out <- theme_tt(out, theme = theme)
+  if (is.null(theme)) {
+    out <- theme_tt(out, theme = "default")
+  } else {
+    out <- theme_tt(out, theme = theme)
+  }
 
   if ("placement" %in% names(dots)) {
     out <- theme_tt(out, "placement", latex_float = dots[["placement"]])
@@ -110,5 +123,3 @@ tt <- function(x,
 
   return(out)
 }
-
-

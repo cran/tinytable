@@ -35,7 +35,7 @@ sanitize_output <- function(output) {
 
   if (isTRUE(check_dependency("knitr"))) {
 
-    if (isTRUE(knitr::pandoc_to() == "latex")) {
+    if (isTRUE(knitr::pandoc_to() %in% c("latex", "beamer"))) {
       usepackage_latex("float")
       usepackage_latex("tabularray", extra_lines = c(
         "\\usepackage[normalem]{ulem}",
@@ -54,6 +54,12 @@ sanitize_output <- function(output) {
 
     } else if (isTRUE(knitr::pandoc_to() == "typst")) {
       if (is.null(output)) out <- "typst"
+      if (isTRUE(check_dependency("quarto"))) {
+        if (isTRUE(quarto::quarto_version() < "1.5.29")) {
+          msg <- "Typst tables require version 1.5.29 or later of Quarto and version 0.11.0 or later of Typst. This software may (or may not) only be available in pre-release builds: https://quarto.org/docs/download"
+          stop(msg, call. = FALSE)
+        }
+      }
 
     } else if (isTRUE(knitr::pandoc_to() == "docx")) {
       if (is.null(output)) out <- "markdown"
@@ -97,11 +103,17 @@ assert_choice <- function(x, choice, null.ok = FALSE, name = as.character(substi
     stop(msg, call. = FALSE)
 }
 
-assert_string <- function(x, null.ok = FALSE, name = as.character(substitute(x))) {
+check_string <- function(x, null.ok = FALSE) {
     if (is.null(x) && isTRUE(null.ok)) return(invisible(TRUE))
     if (is.character(x) && length(x) == 1) return(invisible(TRUE))
+    return(FALSE)
+}
+
+assert_string <- function(x, null.ok = FALSE, name = as.character(substitute(x))) {
     msg <- sprintf("`%s` must be a string.", name)
-    stop(msg, call. = FALSE)
+    if (!isTRUE(check_string(x, null.ok = null.ok))) {
+        stop(msg, call. = FALSE)
+    }
 }
 
 check_flag <- function(x, null.ok = FALSE) {
@@ -139,7 +151,7 @@ check_integerish <- function(x, len = NULL, lower = NULL, upper = NULL, null.ok 
   if (!is.null(len) && length(x) != len) return(FALSE)
   if (!is.null(lower) && any(x < lower)) return(FALSE)
   if (!is.null(upper) && any(x > upper)) return(FALSE)
-  if (any(abs(x - round(x)) > (.Machine$double.eps)^0.5)) return(FALSE)
+  if (isTRUE(any(abs(x - round(x)) > (.Machine$double.eps)^0.5))) return(FALSE)
   return(TRUE)
 }
 
@@ -153,7 +165,7 @@ assert_integerish <- function(x, len = NULL, lower = NULL, upper = NULL, null.ok
     if (!is.null(len) && length(x) != len) msg <- paste0(msg, sprintf("; its length must be %s", len))
     if (!is.null(lower) && any(x < lower)) msg <- paste0(msg, sprintf("; all values must be greater than or equal to %s", lower))
     if (!is.null(upper) && any(x > upper)) msg <- paste0(msg, sprintf("; all values must be less than or equal to %s", upper))
-    if (any(abs(x - round(x)) > (.Machine$double.eps)^0.5)) msg <- paste0(msg, "; all values must be close to integers")
+    if (isTRUE(any(abs(x - round(x)) > (.Machine$double.eps)^0.5))) msg <- paste0(msg, "; all values must be close to integers")
     stop(msg, call. = FALSE)
   }
 }

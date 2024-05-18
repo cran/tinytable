@@ -17,7 +17,6 @@ setMethod(
                             color = NULL,
                             background = NULL,
                             fontsize = NULL,
-                            width = NULL,
                             align = NULL,
                             alignv = NULL,
                             line = NULL,
@@ -109,7 +108,6 @@ setMethod(
   settings$bootstrap <- vectorize_bootstrap(settings$bootstrap, alignv_bootstrap, "vertical-align: %s;")
   settings$bootstrap <- vectorize_bootstrap(settings$bootstrap, color, "color: %s;")
   settings$bootstrap <- vectorize_bootstrap(settings$bootstrap, background, "background-color: %s;")
-  settings$bootstrap <- vectorize_bootstrap(settings$bootstrap, width, "width: %s;")
   if (indent > 0) {
     settings$bootstrap <- paste(settings$bootstrap, sprintf("padding-left: %sem;", indent), sep = "")
   }
@@ -157,10 +155,6 @@ setMethod(
   if (!is.null(bootstrap_css_rule)) {
     out <- bootstrap_setting(out, bootstrap_css_rule, component = "css")
   }
-
-  # Changing function names to table ID to avoid conflict with other tables functions 
-  out <- gsub("styleCell_\\w+\\(", paste0("styleCell_", x@id, "("), out)
-  out <- gsub("spanCell_\\w+\\(", paste0("spanCell_", x@id, "("), out)
 
   x@table_string <- out
 

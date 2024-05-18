@@ -5,6 +5,16 @@ setMethod(
 
   template <- readLines(system.file("templates/bootstrap.html", package = "tinytable"))
 
+  quartoprocessing <- getOption("tinytable_quarto_disable_processing", default = TRUE)
+  assert_flag(quartoprocessing, name = "tinytable_quarto_disable_processing")
+
+  if (isFALSE(quartoprocessing)) {
+      template <- sub("data-quarto-disable-processing='true'",
+                      "data-quarto-disable-processing='false'",
+                      template,
+                      fixed = TRUE)
+  }
+
   # caption
   if (length(x@caption) != 1) {
     template <- sub(
@@ -69,6 +79,13 @@ setMethod(
       template,
       fixed = TRUE
     )
+  } else if (length(x@width) > 1) {
+    template <- sub(
+      "width: auto;",
+      sprintf('table-layout: fixed; width: %s%% !important;', round(sum(x@width) * 100)),
+      template,
+      fixed = TRUE
+    )
   }
 
   # (pseudo-)unique table IDs
@@ -125,6 +142,13 @@ setMethod(
     x <- style_eval(x, bootstrap_class = "table table-bordered")
   } else if ("void" %in% x@theme[[1]]) {
     x <- style_eval(x, bootstrap_class = "table table-borderless")
+  }
+
+  if (length(x@width) > 1) {
+      for (j in seq_len(ncol(x))) {
+          css <- sprintf("width: %s%%;", x@width[j] / sum(x@width) * 100)
+          x <- style_eval(x, j = j, bootstrap_css = css)
+      }
   }
 
   return(x)

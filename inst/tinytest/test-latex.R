@@ -123,7 +123,7 @@ expect_snapshot_print(tab, label = "latex-placement")
 # Missing value replacement
 tab <- data.frame(a = c(NA, 1, 2), b = c(3, NA, 5))
 expect_snapshot_print(
-  tt(tab) |> format_tt(replace_na = "-"),
+  tt(tab) |> format_tt(replace = "-"),
   label = "latex-missing_value_replacement")
 
 # Escape special characters
@@ -227,6 +227,12 @@ expect_snapshot_print(
       line_width = 0.4,
       line_color = "orange"),
   label = "latex-borders")
+
+
+# Issue #242: multiple notes in tabularray are fiddly
+tab <- tt(mtcars[1:4, 1:4], notes = list(a = "blah", b = "hello world", "oh yeah", "works?"))
+tab@output <- "latex"
+expect_snapshot_print(tab, label = "latex-issue242")
 
 
 options(tinytable_print_output = NULL)

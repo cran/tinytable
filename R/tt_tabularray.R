@@ -8,14 +8,10 @@ setMethod(
   ncols <- ncol(x)
   nrows <- nrow(x)
 
-  # caption
-  if (length(x@caption) > 0) {
-    idx <- grep("\\$tinytable_CAPTION", template)
-    template[idx] <- sprintf("\\caption{%s}", x@caption)
-  } else {
-    idx <- grep("\\$tinytable_CAPTION", template)
-    template <- template[-idx]
-  }
+  tall <- FALSE
+  if (length(x@caption) > 0) tall <- TRUE
+  if (length(x@notes) > 0) tall <- TRUE
+
 
   # placement
   if (length(x@placement) == 1) {
@@ -55,12 +51,23 @@ setMethod(
   out <- trimws(out)
   out <- paste(out, collapse = "\n")
 
-  if (length(x@width) > 0) {
+  if (length(x@caption) > 0) {
+    spec <- sprintf("caption={%s},", x@caption[1])
+    out <- tabularray_insert(out, content = spec, type = "outer")
+  }
+
+  if (length(x@width) == 0) {
+    tabularray_cols <- rep("Q[]", ncol(x))
+
+  } else if (length(x@width) == 1) {
     tabularray_cols <- rep("X[]", ncol(x))
     spec <- sprintf("width={%s\\linewidth},", round(x@width, 4))
     out <- tabularray_insert(out, content = spec, type = "inner")
-  } else {
-    tabularray_cols <- rep("Q[]", ncol(x))
+
+  } else if (length(x@width) > 1) {
+    tabularray_cols <- sprintf("X[%s]", x@width)
+    spec <- sprintf("width={%s\\linewidth},", round(sum(x@width), 4))
+    out <- tabularray_insert(out, content = spec, type = "inner")
   }
 
   # colspec (we don't need rowspec)
@@ -69,20 +76,33 @@ setMethod(
 
   # notes
   if (length(x@notes) > 0) {
-    out <- sub("\\begin{tblr}", "\\begin{talltblr}", out, fixed = TRUE)
-    out <- sub("\\end{tblr}", "\\end{talltblr}", out, fixed = TRUE)
     # otherwise an empty caption is created automatically
     out <- tabularray_insert(out, content = "entry=none,label=none", type = "outer")
     if (is.null(names(x@notes))) {
-      lab <- rep("", length(x@notes))
+      lab <- sapply(seq_along(x@notes), function(k) strrep(" ", k - 1))
     } else {
-      lab <- names(x@notes)
+      lab <- NULL
+      pad <- 0
+      for (i in seq_along(x@notes)) {
+        # tabularray requires unique labels, but multiple blanks work
+        if (names(x@notes)[i] == "") {
+          lab[i] <- strrep(" ", pad) # not sure why -1 is necessary in tabularray
+          pad <- pad + 1
+        } else {
+          lab[i] <- names(x@notes)[i]
+        }
+      }
     }
     notes <- sapply(x@notes, function(n) if (is.list(n)) n$text else n)
     for (k in seq_along(notes)) {
       spec <- sprintf("note{%s}={%s}", lab[k], notes[k])
       out <- tabularray_insert(out, content = spec, type = "outer")
     }
+  }
+
+  if (isTRUE(tall)) {
+    out <- sub("\\begin{tblr}", "\\begin{talltblr}", out, fixed = TRUE)
+    out <- sub("\\end{tblr}", "\\end{talltblr}", out, fixed = TRUE)
   }
 
   x@table_string <- out

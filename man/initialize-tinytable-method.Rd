@@ -16,7 +16,7 @@
 )
 }
 \arguments{
-\item{caption}{A string that will be used as the caption of the table.}
+\item{caption}{A string that will be used as the caption of the table. This argument should \emph{not} be used in Quarto or Rmarkdown documents. In that context, please use the appropriate chunk options.}
 
 \item{notes}{Notes to append to the bottom of the table. This argument accepts several different inputs:
 \itemize{
@@ -32,7 +32,11 @@
 \item Function: Applied to the \code{tinytable} object.
 }}
 
-\item{width}{A numeric value between 0 and 1 indicating the proportion of the line width that the table should cover.}
+\item{width}{Table or column width.
+\itemize{
+\item Single numeric value smaller than or equal to 1 determines the full table width, in proportion of line width.
+\item Numeric vector of length equal to the number of columns in \code{x} determines the width of each column, in proportion of line width. If the sum of \code{width} exceeds 1, each element is divided by \code{sum(width)}. This makes the table full-width with relative column sizes.
+}}
 }
 \description{
 Method for a tinytable S4 object

@@ -33,8 +33,8 @@ theme_tabular <- function(x, ...) {
             tab <- lines_drop(tab, regex = "<\\/table>", position = "after")
 
         } else if (isTRUE(table@output == "typst")) {
-            tab <- lines_drop(tab, regex = "tablex\\(", position = "before")
-            tab <- lines_drop(tab, regex = "\\/\\/ end tablex", position = "after")
+            tab <- lines_drop(tab, regex = "table\\(", position = "before")
+            tab <- lines_drop(tab, regex = "\\/\\/ end table", position = "after")
         }
 
         table@table_string <- tab
@@ -98,11 +98,15 @@ theme_void <- function(x, ...) {
             tab <- tab[!grepl("^[\\+|=]+$", tab)]
             tab <- gsub("|", " ", tab, fixed = TRUE)
             table@table_string <- paste(tab, collapse = "\n")
+        } else if (isTRUE(table@output == "typst")) {
+            tab <- table@table_string
+            tab <- lines_drop(tab, regex = "table.hline", position = "all", fixed = TRUE)
+            table@table_string <- tab
         }
         return(table)
     }
     x <- style_tt(x, finalize = fn,
-        bootstrap_class = "table table-borderless")
+                  bootstrap_class = "table table-borderless")
     x <- theme_tt(x, "placement")
     return(x)
 }
@@ -119,8 +123,8 @@ theme_grid <- function(x, ...) {
             table@table_string <- s
         } else if (isTRUE(table@output == "typst")) {
             table@table_string <- sub(
-                "auto-lines: false,",
-                "auto-lines: true,",
+                "stroke: none,",
+                "stroke: true,",
                 table@table_string)
         }
         return(table)
@@ -136,6 +140,9 @@ theme_striped <- function(x, ...) {
     assert_class(x, "tinytable")
     fn <- function(table) {
         if (isTRUE(table@output == "typst")) {
+            table <- style_eval(table, i = 1 - table@nhead, line = "t", line_width = .1)
+            table <- style_eval(table, i = 0, line = "b", line_width = .05)
+            table <- style_eval(table, i = nrow(table), line = "b", line_width = .1)
             table <- style_eval(table, i = 1 - table@nhead, line = "t", line_width = .1)
             table <- style_eval(table, i = 0, line = "b", line_width = .05)
             table <- style_eval(table, i = nrow(table), line = "b", line_width = .1)
@@ -161,6 +168,8 @@ theme_bootstrap <- function(x, ...) {
             tab <- tab[!grepl("^[\\+|-]+$", tab)]
             tab <- gsub("|", " ", tab, fixed = TRUE)
             table@table_string <- paste(tab, collapse = "\n")
+        } else if (isTRUE(table@output == "typst")) {
+            table <- style_eval(table, i = 0:nrow(table), line = "bt", line_width = 0.05, line_color = "silver")
         }
         return(table)
     }
@@ -202,8 +211,8 @@ theme_multipage <- function(x, rowhead = 0, rowfoot = 0, ...) {
         if (!isTRUE(table@output == "latex")) return(table)
 
         tab <- table@table_string
-        tab <- sub("\\\\begin\\{tblr", "\\\\begin\\{longtblr", tab)
-        tab <- sub("\\\\end\\{tblr", "\\\\end\\{longtblr", tab)
+        tab <- sub("\\\\begin\\{talltblr", "\\\\begin\\{longtblr", tab)
+        tab <- sub("\\\\end\\{talltblr", "\\\\end\\{longtblr", tab)
 
         tab <- strsplit(tab, "\n")[[1]]
         idx <- grepl("^\\\\caption\\{|^\\\\begin\\{table|^\\\\end\\{table|^\\\\centering", trimws(tab))
