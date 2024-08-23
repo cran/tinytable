@@ -16,7 +16,7 @@ setMethod(
                              alignv = NULL,
                              line = NULL,
                              line_color = "black",
-                             line_width = .1,
+                             line_width = 0.1,
                              colspan = NULL,
                              rowspan = NULL,
                              indent = 0,
@@ -26,12 +26,14 @@ setMethod(
 
   out <- x@table_string
 
-  ival <- if (is.null(i)) seq_len(nrow(x)) else i
-  jval <- if (is.null(j)) seq_len(ncol(x)) else j
+  ival <- sanitize_i(i, x)
+  jval <- sanitize_j(j, x)
+  inull <- isTRUE(attr(ival, "null"))
+  jnull <- isTRUE(attr(jval, "null"))
 
   # order may be important for recycling 
   settings <- expand.grid(i = ival, j = jval, tabularray = "", stringsAsFactors = FALSE)
-  if (is.null(i) && !is.null(j)) {
+  if (inull && !jnull) {
     settings <- settings[order(settings$i, settings$j), ]
   }
 
@@ -43,11 +45,11 @@ setMethod(
   # colspan and rowspan require cell level, so we keep the full settings DF, even
   # in tabularray, where we can sometimes use rowspec or colspec when one is empty
   if (is.null(colspan) && is.null(rowspan)) {
-    if (is.null(i) && is.null(j)) {
+    if (inull && jnull) {
       settings <- unique(settings[, c("i", "tabularray"), drop = FALSE])
-    } else if (is.null(i)) {
+    } else if (inull) {
       settings <- unique(settings[, c("j", "tabularray"), drop = FALSE])
-    } else if (is.null(j)) {
+    } else if (jnull) {
       settings <- unique(settings[, c("i", "tabularray"), drop = FALSE])
     }
   }
@@ -67,13 +69,13 @@ setMethod(
 
   # convert to tabularray now that we've filled the bootstrap settings
   if (is.numeric(fontsize)) settings$tabularray <- sprintf("%s font=\\fontsize{%sem}{%sem}\\selectfont,", settings$tabularray, fontsize, fontsize + 0.3) 
-  if (indent > 0) settings$tabularary <- sprintf("%s preto={\\hspace{%sem}},", settings$tabularray, indent)
+  if (indent > 0) settings$tabularray <- sprintf("%s preto={\\hspace{%sem}},", settings$tabularray, indent)
 
   if (!is.null(align)) {
     if (length(align) == 1) align <- rep(align, length(jval))
 
     # explicit j input
-    siunitx <- getOption("tinytable_siunitx_table-format", default = "table-format=-%s.%s,table-align-text-before=false,table-align-text-after=false,input-symbols={-,\\*+()}")
+    siunitx <- get_option("tinytable_siunitx_table_format", default = "table-format=-%s.%s,table-align-text-before=false,table-align-text-after=false,input-symbols={-,\\*+()}")
     if ("j" %in% colnames(settings)) {
       for (idx in seq_along(jval)) {
         a_tmp <- align[idx]

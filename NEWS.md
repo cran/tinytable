@@ -1,5 +1,87 @@
 # News
 
+## 0.4.0
+
+### Breaking change
+
+HTML tables no longer insert MathJax scripts by default. This behavior could enter in conflict with other MathJax scripts loaded explicitly by the user or automatically by Quarto. Users can revert to the previous behavior by setting a global option:
+
+`options(tinytable_html_mathjax = TRUE)`
+
+Alternatively, users can insert appropriate scripts directly in their HTML document or as a Quarto literal chunk:
+
+````
+```{=html}
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']]
+  },
+  svg: {
+    fontCache: 'global'
+  }
+};
+</script>
+```
+````
+
+* Option `tinytable_markdown_hlines` has been removed. To get a more minimal looking markdown table, use output "gfm" which is gfm compliant.
+
+### General
+
+* Global options are more consistent and better documented. Thanks to @kylebutts for PR #313.
+* Support Viewer Pane in Positron IDE. Thank to @kylebutts for code contribution in PR #299.
+* Improved documentation.
+* `format_tt(markdown=TRUE)` escapes groups and notes when `i` and `j` are `NULL`.
+* `plot_tt()`: The `height` argument is now respected in Markdown and Word documents.
+* `group_tt()` allows 0 and duplicates in `i` argument for labels in the first row and consecutive labels.
+* Headers are now styled and formatted when `i=NULL`.
+* `colnames(x)<-NULL` works on a `tinytable` object.
+* `format_tt(num_big_mark)` applies to integer columns.
+* Use `getOption("viewer")` instead of `rstudioapi::viewer()` for positron support
+* `glue::glue()` string is accepted by `format_tt()`. Thanks to @LukasWallrich for report #792 on the `modelsummary` repository.
+* Support Github Flavored Markdown (`gfm`) output. Thanks to @kylebutts for contribution #315. 
+* `theme_tt("rotate")` to rotate tables in LaTeX or Typst.
+* `save_tt("/path/to/file")` returns the file path invisibly. Thanks to @yjunechoe for issue #328.
+
+### HTML
+
+* Simplify JS functions in HTML documents. Avoid nesting full HTML documents inside Quarto output.
+* Remove polyfill JS because of security issues.
+* Avoid error in interactive use in Positron.
+
+### LaTeX
+
+* `theme_tt("tabular")` no longer uses `tabularray` or `booktabs`. Only relies on basic LaTeX packages.
+* `theme_tt("tabular", style = "tabularray")` does the same as above, but keeps the `\begin{tblr}` environment.
+
+### Typst
+
+* `style_tt()` supports `align` for different rows and cells, rather than just whole columns.
+* `style_tt()` supports `indent` argument.
+* `group_tt()` supports `indent` argument.
+* No more gutters when `group_tt(j)` and `style_tt(background)`
+* `theme_tt(x, horizontal = "l")` can left, center, or right-align a table in the page.
+
+### Global options
+
+* `save_tt("pdf")`:
+  - `options(tinytable_save_pdf_clean = TRUE)`
+  - `options(tinytable_save_pdf_engine = "xelatex")`
+* `options(tinytable_tt_rownames=TRUE)`: Print row names in the first column by calling. Thanks to @rsbivand for Issue #264.
+* EXPERIMENTAL: `options(tinytable_html_mathjax = TRUE)`. Inserts MathJax scripts in the HTML file. This may cause conflicts if MathJax is otherwise loaded in the document.
+
+### Bugs
+
+* Footnotes were center-aligned in some Quarto chunks. Thanks to @andrewheiss for report #303.
+* `replace` does not work in LaTeX with `format_tt(quarto=TRUE)`. Thanks to @cbgoodman for Issue #263.
+* `style_tt(indent)` works for LaTeX
+* Notes were hard-coded to 5 colspan. We now use the actual number of columns in the table. Thanks to @DominikVogel for report #788.
+* Do not suppress labels when inserting notes. Thanks to @cportner for Issue #290.
+* `format_tt()` on a table without column names. Thanks to @andrewheiss for report #306.
+* \cmidrule[lr] requires [] in tabularray but () otherwise. Thanks to @andrewheiss for report #307.
+
 ## 0.3.0
 
 Breaking change:

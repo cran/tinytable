@@ -19,7 +19,8 @@ tt_eval_grid  <- function(x, width_cols = NULL, ...) {
       width_cols <- x@width_cols
   }
 
-  if (!is.null(names(tab))) {
+  tthead <- inherits(x, "tinytable") && isTRUE(x@nhead > 0)
+  if (length(colnames(x)) != 0 || tthead) {
     tab <- as.matrix(tab)
     tab <- base::rbind(colnames(x), tab)
     header <- TRUE
@@ -33,7 +34,7 @@ tt_eval_grid  <- function(x, width_cols = NULL, ...) {
   tab <- matrix(padded, ncol = ncol(tab))
 
   if (is.null(width_cols) || length(width_cols) == 0) {
-    for (j in 1:ncol(tab)) {
+    for (j in seq_len(ncol(tab))) {
       if (isTRUE(check_dependency("fansi"))) {
         width_cols[j] <- max(nchar(as.character(fansi::strip_ctl(tab[, j]))))
       } else {
@@ -55,7 +56,7 @@ tt_eval_grid  <- function(x, width_cols = NULL, ...) {
     }
   }
 
-  for (j in 1:ncol(x)) {
+  for (j in seq_len(ncol(x))) {
     if (isTRUE(check_dependency("fansi"))) {
       nc <- nchar(fansi::strip_ctl(tab[, j]))
     } else {

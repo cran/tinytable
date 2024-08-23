@@ -4,6 +4,23 @@ get_id <- function(stem = "id") {
   paste0(stem, paste(id, collapse = ""))
 }
 
+# getOption with deprecation warnings
+get_option <- function(x, default = NULL) {
+  deprecated <- c(
+    # old = new
+    "tinytable_grid_hlines" = "tinytable_markdown_hlines",
+    "tinytable_save_pdf_clean" = "tinytable_pdf_clean",
+    "tinytable_save_pdf_engine" = "tinytable_pdf_engine"
+  )
+  if (x %in% names(deprecated)) {
+    x_new <- deprecated[x]
+    warning(
+      sprintf("Option `%s` is deperacated. Use `%s` instead.", x, x_new)
+    )
+    x <- x_new
+  }
+  getOption(x, default = default)
+}
 
 ttempdir <- function() {
   d <- tempdir()
@@ -17,7 +34,7 @@ ttempdir <- function() {
 
 lines_drop_consecutive_empty <- function(x) {
   lines <- strsplit(x, "\n")[[1]]
-  tmp = rle(lines)
+  tmp <- rle(lines)
   tmp$lengths[trimws(tmp$values) == ""] <- 1
   lines <- inverse.rle(tmp) 
   x <- paste0(lines, collapse = "\n")
@@ -25,11 +42,11 @@ lines_drop_consecutive_empty <- function(x) {
 }
 
 
-lines_drop <- function(old, regex, position = "equal", fixed = FALSE) {
+lines_drop <- function(old, regex, position = "equal", fixed = FALSE, unique = TRUE) {
   assert_choice(position, c("equal", "before", "after", "all"))
   lines <- strsplit(old, "\n")[[1]]
   idx <- grep(regex, lines, fixed = fixed)
-  if (length(idx) > 1 && position != "all") {
+  if (isTRUE(unique) && length(idx) > 1 && position != "all") {
     stop("The `regex` supplied `lines_drop()` did not match a unique line.", call. = FALSE)
   }
   if (!anyNA(idx)) {

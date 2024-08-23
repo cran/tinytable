@@ -116,7 +116,7 @@ expect_snapshot_print(
 
 # placement
 tab <- mtcars[1:3, 1:3]
-tab <- tt(tab) |> theme_tt("placement", "H")
+tab <- tt(tab) |> theme_tt("placement", latex_float = "H")
 tab@output <- "latex"
 expect_snapshot_print(tab, label = "latex-placement")
 
@@ -233,6 +233,21 @@ expect_snapshot_print(
 tab <- tt(mtcars[1:4, 1:4], notes = list(a = "blah", b = "hello world", "oh yeah", "works?"))
 tab@output <- "latex"
 expect_snapshot_print(tab, label = "latex-issue242")
+
+
+# Issue #306
+x <- data.frame(x = 1:5)
+x <- data.frame(x = 1:5)
+colnames(x) <- NULL
+tab <- tt(x) |> format_tt() |> save_tt("latex")
+expect_inherits(tab, "character")
+
+
+# Issue #307
+tab <- tt(head(iris)) |> 
+  group_tt(j = list("blah" = 1:2)) |>
+  theme_tt("tabular")
+expect_snapshot_print(tab, label = "latex-issue307.tex")
 
 
 options(tinytable_print_output = NULL)

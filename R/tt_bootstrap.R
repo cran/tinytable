@@ -5,9 +5,18 @@ setMethod(
 
   template <- readLines(system.file("templates/bootstrap.html", package = "tinytable"))
 
-  quartoprocessing <- getOption("tinytable_quarto_disable_processing", default = TRUE)
-  assert_flag(quartoprocessing, name = "tinytable_quarto_disable_processing")
+  mathjax <- get_option("tinytable_html_mathjax", default = FALSE)
+  assert_flag(mathjax, name = "tinytable_html_mathjax")
+  if (isFALSE(mathjax)) {
+    template <- paste(template, collapse = "\n")
+    sta <- "    <!-- tinytable mathjax start -->"
+    end <- "    <!-- tinytable mathjax end -->"
+    template <- lines_drop_between(template, sta, end, fixed = TRUE)
+    template <- strsplit(template, "\n")[[1]]
+  }
 
+  quartoprocessing <- get_option("tinytable_quarto_disable_processing", default = TRUE)
+  assert_flag(quartoprocessing, name = "tinytable_quarto_disable_processing")
   if (isFALSE(quartoprocessing)) {
       template <- sub("data-quarto-disable-processing='true'",
                       "data-quarto-disable-processing='false'",
@@ -69,6 +78,9 @@ setMethod(
       template,
       fixed = TRUE
     )
+    for (ii in seq_along(notes)) { 
+        x <- style_tt(x, i = nrow(x) + ii, align = "l")
+    }
   }
 
   # width
@@ -90,6 +102,7 @@ setMethod(
 
   # (pseudo-)unique table IDs
   id <- get_id("")
+  x@id <- id
 
   # table and styling function in JS must have different names when there is more than one table on a page.
   template <- gsub("styleCell", paste0("styleCell_", id), template, fixed = TRUE)
@@ -133,7 +146,7 @@ setMethod(
 
   if (is.null(x@theme[[1]]) || is.function(x@theme[[1]]) || isTRUE("default" %in% x@theme[[1]])) {
     x <- style_eval(x, bootstrap_class = "table table-borderless",
-      i = 0, line = "b", line_color = "#d3d8dc", line_width = .1)
+      i = 0, line = "b", line_color = "#d3d8dc", line_width = 0.1)
   } else if ("bootstrap" %in% x@theme[[1]]) {
     x <- style_eval(x, bootstrap_class = "table")
   } else if ("striped" %in% x@theme[[1]]) {
@@ -147,7 +160,7 @@ setMethod(
   if (length(x@width) > 1) {
       for (j in seq_len(ncol(x))) {
           css <- sprintf("width: %s%%;", x@width[j] / sum(x@width) * 100)
-          x <- style_eval(x, j = j, bootstrap_css = css)
+          x <- style_tt(x, j = j, bootstrap_css = css)
       }
   }
 

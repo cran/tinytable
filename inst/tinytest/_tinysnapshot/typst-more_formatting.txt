@@ -1,14 +1,14 @@
-#[
+#show figure: set block(breakable: true)
+#figure( // start figure preamble
+  
+  kind: "tinytable",
+  supplement: "Table", // end figure preamble
+
+block[ // start block
+
 #let nhead = 1;
 #let nrow = 4;
 #let ncol = 3;
-
-// start figure preamble
-#figure(
-  
-  kind: "tinytable",
-  supplement: none,
-// end figure preamble
 
   #let fill-array = ( 
     // tinytable cell fill after
@@ -16,12 +16,18 @@
   #let style-array = ( 
     // tinytable cell style after
   )
+  #let align-array = (
+    // tinytable cell align after
+  )
+  // tinytable align-default-array after
+  #let align-default-array = ( left, left, left, ) // tinytable align-default-array here
   #show table.cell: it => {
     let tmp = it
     let data = style-array.find(data => data.x == it.x and data.y == it.y)
     if data != none {
       set text(data.color)
       set text(data.fontsize)
+      if data.indent != false { tmp = pad(left: data.indent, tmp) }
       if data.underline == true { tmp = underline(tmp) }
       if data.italic == true { tmp = emph(tmp) }
       if data.bold == true { tmp = strong(tmp) }
@@ -35,9 +41,17 @@
 
   #align(center, [
 
-  table( // tinytable table start
+  #table( // tinytable table start
     columns: (auto, auto, auto),
     stroke: none,
+    align: (x, y) => {
+      let data = align-array.find(data => data.x == x and data.y == y)
+      if data != none {
+        data.align
+      } else {
+        align-default-array.at(x)
+      }
+    },
     fill: (x, y) => {
       let data = fill-array.find(data => data.x == x and data.y == y)
       if data != none {
@@ -70,5 +84,5 @@ table.hline(y: 0, start: 0, end: 3, stroke: 0.1em + black),
 
   ]) // end align
 
-) // end figure
-] 
+] // end block
+) // end figure 

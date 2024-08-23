@@ -12,6 +12,7 @@ swap_class <- function(x, new_class) {
   return(out)
 }
 
+setClassUnion("NULLorCharacter", c("NULL", "character"))
 
 #' tinytable S4 class
 #' 
@@ -33,11 +34,13 @@ setClass(
         nrow = "numeric",
         ncol = "numeric",
         nhead = "numeric",
-        names = "character",
+        ngroupi = "numeric",
+        names = "NULLorCharacter",
         output = "character",
         output_dir = "character",
         id = "character",
         bootstrap_class = "character",
+        css = "data.frame",
         lazy_format = "list",
         lazy_group = "list",
         lazy_style = "list",
@@ -67,10 +70,12 @@ setMethod("initialize", "tinytable", function(
   .Object@nrow <- nrow(.Object@data)
   .Object@ncol <- ncol(.Object@data)
   .Object@nhead <- if (is.null(colnames(data))) 0 else 1
+  .Object@ngroupi <- 0
   .Object@names <- if (is.null(colnames(data))) character() else colnames(data)
   .Object@id <- get_id("tinytable_")
   .Object@output <- "tinytable"
   .Object@output_dir <- getwd()
+  .Object@css <- data.frame(i = NA, j = NA, bootstrap = NA, id = NA)
   # conditional: allows NULL user input
   if (!is.null(placement)) .Object@placement <- placement
   if (!is.null(caption)) .Object@caption <- caption
@@ -107,7 +112,13 @@ setMethod("colnames", "tinytable", function(x) return(x@names))
 setReplaceMethod("colnames",
                  signature = "tinytable", 
                  definition = function(x, value) {
-                   assert_character(value, len = length(x@names))
+                   # Issue #306
+                   if (length(value) == 0) value <- NULL
+                   if (!is.null(value)) {
+                     assert_character(value, len = length(x@names))
+                   } else {
+                     if (x@nhead == 1) x@nhead <- 0
+                   }
                    x@names <- value
                    return(x)
                  }

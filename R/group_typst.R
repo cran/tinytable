@@ -1,24 +1,25 @@
 #' tinytable S4 method
-#' 
+#'
 #' @keywords internal
 setMethod(
   f = "group_eval",
   signature = "tinytable_typst",
-  definition = function(x, i = NULL, j = NULL, ...) {
-  out <- x
+  definition = function(x, i = NULL, j = NULL, indent = 0, ...) {
+    out <- x
 
-  if (!is.null(i)) {
-    out <- group_typst_row(out, i)
-  }
+    if (!is.null(i)) {
+      out <- group_typst_row(out, i, indent)
+    }
 
-  if (!is.null(j)) {
-    out <- group_typst_col(out, j, ...)
-  }
+    if (!is.null(j)) {
+      out <- group_typst_col(out, j, ...)
+    }
 
-  return(out)
-})
+    return(out)
+  })
 
-group_typst_row <- function(x, i, ...) {
+
+group_typst_row <- function(x, i, indent, ...) {
   tab <- x@table_string
   tab <- strsplit(tab, split = "\\n")[[1]]
   body_min <- utils::head(grep("tinytable cell content after", tab), 1) + x@nhead
@@ -29,15 +30,16 @@ group_typst_row <- function(x, i, ...) {
   mid <- mid[mid != ""]
   bot <- tab[(body_max + 1):length(tab)]
   for (idx in rev(seq_along(i))) {
-    mid <- c(
-      mid[1:(i[idx] - 1)],
+    mid <- append(mid,
       sprintf("table.cell(colspan: %s)[%s],", ncol(x), names(i)[idx]),
-      mid[i[idx]:length(mid)]
-    )
+      after = i[idx] - 1)
   }
   tab <- c(top, mid, bot)
   tab <- paste(tab, collapse = "\n")
   x@table_string <- tab
+  idx_new <- i + seq_along(i) - 1
+  idx_old <- setdiff(seq_len(nrow(x)), idx_new)
+  x <- style_tt(x, idx_old, indent = indent)
   return(x)
 }
 
@@ -51,10 +53,10 @@ group_typst_col <- function(x, j, ihead, ...) {
   idx <- order(max_col)
   j <- j[idx]
   lab <- names(j)
-  len <- sapply(j, length)
+  len <- lengths(j)
   col <- ifelse(
-    trimws(lab) == "", 
-    sprintf("[%s],", lab), 
+    trimws(lab) == "",
+    sprintf("[%s],", lab),
     sprintf("table.cell(stroke: (bottom: .05em + black), colspan: %s, align: center)[%s],", len, lab))
   col <- paste(col, collapse = "")
   out <- lines_insert(out, col, "repeat: true", "after")

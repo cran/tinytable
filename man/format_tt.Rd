@@ -8,23 +8,23 @@ format_tt(
   x,
   i = NULL,
   j = NULL,
-  digits = getOption("tinytable_format_digits", default = NULL),
-  num_fmt = getOption("tinytable_format_num_fmt", default = "significant"),
-  num_zero = getOption("tinytable_format_num_zero", default = FALSE),
-  num_suffix = getOption("tinytable_format_num_suffix", default = FALSE),
-  num_mark_big = getOption("tinytable_format_num_mark_big", default = ""),
-  num_mark_dec = getOption("tinytable_format_num_mark_dec", default = getOption("OutDec",
-    default = ".")),
-  date = getOption("tinytable_format_date", default = "\%Y-\%m-\%d"),
-  bool = getOption("tinytable_format_bool", default = function(column)
+  digits = get_option("tinytable_format_digits", default = NULL),
+  num_fmt = get_option("tinytable_format_num_fmt", default = "significant"),
+  num_zero = get_option("tinytable_format_num_zero", default = FALSE),
+  num_suffix = get_option("tinytable_format_num_suffix", default = FALSE),
+  num_mark_big = get_option("tinytable_format_num_mark_big", default = ""),
+  num_mark_dec = get_option("tinytable_format_num_mark_dec", default =
+    getOption("OutDec", default = ".")),
+  date = get_option("tinytable_format_date", default = "\%Y-\%m-\%d"),
+  bool = get_option("tinytable_format_bool", default = function(column)
     tools::toTitleCase(tolower(column))),
-  other = getOption("tinytable_format_other", default = as.character),
-  replace = getOption("tinytable_format_replace", default = TRUE),
-  escape = getOption("tinytable_format_escape", default = FALSE),
-  markdown = getOption("tinytable_format_markdown", default = FALSE),
-  quarto = getOption("tinytable_format_quarto", default = FALSE),
-  fn = getOption("tinytable_format_fn", default = NULL),
-  sprintf = getOption("tinytable_format_sprintf", default = NULL),
+  other = get_option("tinytable_format_other", default = as.character),
+  replace = get_option("tinytable_format_replace", default = TRUE),
+  escape = get_option("tinytable_format_escape", default = FALSE),
+  markdown = get_option("tinytable_format_markdown", default = FALSE),
+  quarto = get_option("tinytable_format_quarto", default = FALSE),
+  fn = get_option("tinytable_format_fn", default = NULL),
+  sprintf = get_option("tinytable_format_sprintf", default = NULL),
   ...
 )
 }
@@ -71,13 +71,12 @@ format_tt(
 
 \item{escape}{Logical or "latex" or "html". If TRUE, escape special characters to display them as text in the format of the output of a \code{tt()} table.
 \itemize{
-\item If \code{i} is \code{NULL}, escape the \code{j} columns and column names.
 \item If \code{i} and \code{j} are both \code{NULL}, escape all cells, column names, caption, notes, and spanning labels created by \code{group_tt()}.
 }}
 
 \item{markdown}{Logical; if TRUE, render markdown syntax in cells. Ex: \verb{_italicized text_} is properly italicized in HTML and LaTeX.}
 
-\item{quarto}{Logical. Enable Quarto data processing and wrap cell content in a \code{data-qmd} span (HTML) or \verb{\\QuartoMarkdownBase64\{\}} macro (LaTeX). Warning: Quarto data processing can enter in conflict with \code{tinytable} styling or formatting options. See global options section below.}
+\item{quarto}{Logical. Enable Quarto data processing and wrap cell content in a \code{data-qmd} span (HTML) or \verb{\\QuartoMarkdownBase64\{\}} macro (LaTeX). See warnings in the Global Options section below.}
 
 \item{fn}{Function for custom formatting. Accepts a vector and returns a character vector of the same length.}
 
@@ -98,6 +97,12 @@ If this function is applied several times to the same cell, the last transformat
 
 \subsection{Quarto data processing}{
 
+The \code{format_tt(quarto=TRUE)} argument activates Quarto data processing for specific cells. This funcationality comes with  a few warnings:
+\enumerate{
+\item Currently, Quarto provides a \verb{\\QuartoMarkdownBase64\{\}} LaTeX macro, but it does not appear to do anything with it. References and markdown codes may not be processed as expected in LaTeX.
+\item Quarto data processing can enter in conflict with \code{tinytable} styling or formatting options. See below for how to disable it.
+}
+
 \code{options(tinytable_quarto_disable_processing = TRUE)}
 
 Disable Quarto processing of cell content. Setting this global option to \code{FALSE} may lead to conflicts with some \code{tinytable} features, but it also allows use of markdown and Quarto-specific code in table cells, such as cross-references.
@@ -108,6 +113,19 @@ tt(x) |> format_tt(i = 1, fn = fn)
 }\if{html}{\out{</div>}}
 
 See this link for more details: https://quarto.org/docs/authoring/tables.html#disabling-quarto-table-processing
+}
+
+\subsection{HTML}{
+\itemize{
+\item EXPERIMENTAL \code{options(tinytable_html_mathjax = TRUE)} inserts MathJax scripts in the HTML document. Warning: This may conflict with other elements of the page if MathJax is otherwise loaded.
+}
+}
+
+\subsection{PDF}{
+\itemize{
+\item \code{options(tinytable_pdf_clean = TRUE)} deletes temporary and log files.
+\item \code{options(tinytable_pdf_engine = "xelatex")}: "xelatex", "pdflatex", "lualatex"
+}
 }
 }
 

@@ -6,11 +6,12 @@
 \usage{
 tt(
   x,
-  digits = getOption("tinytable_tt_digits", default = NULL),
-  caption = NULL,
-  notes = NULL,
-  width = getOption("tinytable_tt_width", default = NULL),
-  theme = getOption("tinytable_tt_theme", default = NULL),
+  digits = get_option("tinytable_tt_digits", default = NULL),
+  caption = get_option("tinytable_tt_caption", default = NULL),
+  notes = get_option("tinytable_tt_notes", default = NULL),
+  width = get_option("tinytable_tt_width", default = NULL),
+  theme = get_option("tinytable_tt_theme", default = NULL),
+  rownames = get_option("tinytable_tt_rownames", default = FALSE),
   ...
 )
 }
@@ -37,9 +38,11 @@ tt(
 
 \item{theme}{Function or string.
 \itemize{
-\item String: grid, resize, multipage, placement, striped, void, bootstrap, tabular
+\item String: grid, resize, multipage, placement, rotate, striped, void, bootstrap, tabular
 \item Function: Applied to the \code{tinytable} object.
 }}
+
+\item{rownames}{Logical. If \code{TRUE}, rownames are included as the first column}
 
 \item{...}{Additional arguments are ignored}
 }
@@ -64,13 +67,17 @@ The \code{tt} function renders a table in different formats with various styling
 \section{LaTeX preamble}{
 
 
-When rendering Quarto and Rmarkdown documents, \code{tinytable} will populate the LaTeX preamble automatically with all the required packages. For standalone LaTeX packages, these commands should be inserted in the preamble:
+\code{tinytable} uses the \code{tabularray} package from your LaTeX distribution to draw tables. \code{tabularray}, in turn, uses the special \code{tblr}, \code{talltblr}, and \code{longtblr} environments.
+
+When rendering a document from Quarto or Rmarkdown directly to PDF, \code{tinytable} will populate the LaTeX preamble automatically with all the required packages (except when code chunks are cached). For standalone LaTeX documents, these commands should be inserted in the preamble manually:
 
 \if{html}{\out{<div class="sourceCode latex">}}\preformatted{\\usepackage\{tabularray\}
 \\usepackage\{float\}
 \\usepackage\{graphicx\}
+\\usepackage\{rotating\}
 \\usepackage[normalem]\{ulem\}
 \\UseTblrLibrary\{booktabs\}
+\\UseTblrLibrary\{siunitx\}
 \newcommand{\tinytableTabularrayUnderline}[1]\{\\underline\{#1\}\}
 \newcommand{\tinytableTabularrayStrikeout}[1]\{\\sout\{#1\}\}
 \\NewTableCommand\{\\tinytableDefineColor\}[3]\{\\definecolor\{#1\}\{#2\}\{#3\}\}
@@ -80,6 +87,12 @@ When rendering Quarto and Rmarkdown documents, \code{tinytable} will populate th
 \section{Global options}{
 
 \subsection{Quarto data processing}{
+
+The \code{format_tt(quarto=TRUE)} argument activates Quarto data processing for specific cells. This funcationality comes with  a few warnings:
+\enumerate{
+\item Currently, Quarto provides a \verb{\\QuartoMarkdownBase64\{\}} LaTeX macro, but it does not appear to do anything with it. References and markdown codes may not be processed as expected in LaTeX.
+\item Quarto data processing can enter in conflict with \code{tinytable} styling or formatting options. See below for how to disable it.
+}
 
 \code{options(tinytable_quarto_disable_processing = TRUE)}
 
@@ -91,6 +104,19 @@ tt(x) |> format_tt(i = 1, fn = fn)
 }\if{html}{\out{</div>}}
 
 See this link for more details: https://quarto.org/docs/authoring/tables.html#disabling-quarto-table-processing
+}
+
+\subsection{HTML}{
+\itemize{
+\item EXPERIMENTAL \code{options(tinytable_html_mathjax = TRUE)} inserts MathJax scripts in the HTML document. Warning: This may conflict with other elements of the page if MathJax is otherwise loaded.
+}
+}
+
+\subsection{PDF}{
+\itemize{
+\item \code{options(tinytable_pdf_clean = TRUE)} deletes temporary and log files.
+\item \code{options(tinytable_pdf_engine = "xelatex")}: "xelatex", "pdflatex", "lualatex"
+}
 }
 }
 

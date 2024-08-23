@@ -23,11 +23,10 @@
 #' - Named list: Replace matching elements of the vectors in the list by theirs names. Example: 
 #'      - `list("-" = c(NA, NaN), "Tiny" = -Inf, "Massive" = Inf)`
 #' @param escape Logical or "latex" or "html". If TRUE, escape special characters to display them as text in the format of the output of a `tt()` table.
-#' - If `i` is `NULL`, escape the `j` columns and column names.
 #' - If `i` and `j` are both `NULL`, escape all cells, column names, caption, notes, and spanning labels created by `group_tt()`.
 #' @param markdown Logical; if TRUE, render markdown syntax in cells. Ex: `_italicized text_` is properly italicized in HTML and LaTeX.
 #' @param fn Function for custom formatting. Accepts a vector and returns a character vector of the same length.
-#' @param quarto Logical. Enable Quarto data processing and wrap cell content in a `data-qmd` span (HTML) or `\QuartoMarkdownBase64{}` macro (LaTeX). Warning: Quarto data processing can enter in conflict with `tinytable` styling or formatting options. See global options section below.
+#' @param quarto Logical. Enable Quarto data processing and wrap cell content in a `data-qmd` span (HTML) or `\QuartoMarkdownBase64{}` macro (LaTeX). See warnings in the Global Options section below.
 #' @param sprintf String passed to the `?sprintf` function to format numbers or interpolate strings with a user-defined pattern (similar to the `glue` package, but using Base R).
 #' @param ... Additional arguments are ignored.
 #' @inheritParams tt
@@ -76,21 +75,21 @@
 format_tt <- function(x,
                       i = NULL,
                       j = NULL,
-                      digits = getOption("tinytable_format_digits", default = NULL),
-                      num_fmt = getOption("tinytable_format_num_fmt", default = "significant"),
-                      num_zero = getOption("tinytable_format_num_zero", default = FALSE),
-                      num_suffix = getOption("tinytable_format_num_suffix", default = FALSE),
-                      num_mark_big = getOption("tinytable_format_num_mark_big", default = ""),
-                      num_mark_dec = getOption("tinytable_format_num_mark_dec", default = getOption("OutDec", default = ".")),
-                      date = getOption("tinytable_format_date", default = "%Y-%m-%d"),
-                      bool = getOption("tinytable_format_bool", default = function(column) tools::toTitleCase(tolower(column))),
-                      other = getOption("tinytable_format_other", default = as.character),
-                      replace = getOption("tinytable_format_replace", default = TRUE),
-                      escape = getOption("tinytable_format_escape", default = FALSE),
-                      markdown = getOption("tinytable_format_markdown", default = FALSE),
-                      quarto = getOption("tinytable_format_quarto", default = FALSE),
-                      fn = getOption("tinytable_format_fn", default = NULL),
-                      sprintf = getOption("tinytable_format_sprintf", default = NULL),
+                      digits = get_option("tinytable_format_digits", default = NULL),
+                      num_fmt = get_option("tinytable_format_num_fmt", default = "significant"),
+                      num_zero = get_option("tinytable_format_num_zero", default = FALSE),
+                      num_suffix = get_option("tinytable_format_num_suffix", default = FALSE),
+                      num_mark_big = get_option("tinytable_format_num_mark_big", default = ""),
+                      num_mark_dec = get_option("tinytable_format_num_mark_dec", default = getOption("OutDec", default = ".")),
+                      date = get_option("tinytable_format_date", default = "%Y-%m-%d"),
+                      bool = get_option("tinytable_format_bool", default = function(column) tools::toTitleCase(tolower(column))),
+                      other = get_option("tinytable_format_other", default = as.character),
+                      replace = get_option("tinytable_format_replace", default = TRUE),
+                      escape = get_option("tinytable_format_escape", default = FALSE),
+                      markdown = get_option("tinytable_format_markdown", default = FALSE),
+                      quarto = get_option("tinytable_format_quarto", default = FALSE),
+                      fn = get_option("tinytable_format_fn", default = NULL),
+                      sprintf = get_option("tinytable_format_sprintf", default = NULL),
                       ...
                       ) {
   out <- x
@@ -169,6 +168,7 @@ format_tt_lazy <- function(x,
                            other = as.character
                            ) {
 
+  # format_tt() supports vectors
   if (isTRUE(check_atomic_vector(x))) {
     atomic_vector <- TRUE
     if (is.factor(x)) x <- as.character(x)
@@ -199,105 +199,56 @@ format_tt_lazy <- function(x,
   assert_string(sprintf, null.ok = TRUE)
   assert_flag(markdown)
   assert_flag(quarto)
-  if (is.null(j)) jnull <- TRUE else jnull <- FALSE
-  if (is.null(i)) inull <- TRUE else inull <- FALSE
-  j <- sanitize_j(j, ori)
+  replace <- sanitize_replace(replace)
+  sanity_num_mark(digits, num_mark_big, num_mark_dec)
 
-  if (isTRUE(replace)) {
-      replace <- stats::setNames(list(NA), "")
-  } else if (isFALSE(replace)) {
-      replace <- stats::setNames(list(NULL), "")
-  } else if (isTRUE(check_string(replace))) {
-      replace <- stats::setNames(list(NA), replace)
-  } else if (!is.list(replace) || is.null(names(replace))) {
-      stop("`replace` should be TRUE/FALSE, a single string, or a named list.", call. = FALSE)
-  }
-
-  if (is.null(digits)) {
-    if (num_mark_big != "") stop("`num_mark_big` requires a `digits` value.", call. = FALSE)
-    if (num_mark_dec != ".") stop("`num_mark_dec` requires a `digits` value.", call. = FALSE)
-  }
+  i <- sanitize_i(i, x, pre_group_i = TRUE)
+  j <- sanitize_j(j, x)
+  ibody <- attr(i, "body")
+  inull <- isTRUE(attr(i, "null"))
+  jnull <- isTRUE(attr(j, "null"))
 
   # In sanity_tt(), we fill in missing NULL `j` in the format-specific versions,
   # because tabularray can do whole column styling. Here, we need to fill in
   # NULL for all formats since this is applied before creating the table.
   # nrow(out) because nrow(x) sometimes includes rows that will be added **in the lazy future** by group_tt()
-  if (is.null(i)) i <- seq_len(nrow(out))
-  if (is.null(j)) j <- seq_len(ncol(out))
 
   # format each column
   # Issue #230: drop=TRUE fixes bug which returned a character dput-like vector
   for (col in j) {
     # sprintf() is self-contained
     if (!is.null(sprintf)) {
-      out[i, col] <- base::sprintf(sprintf, ori[i, col, drop = TRUE])
+      out[ibody, col] <- base::sprintf(sprintf, ori[ibody, col, drop = TRUE])
+
     } else {
       # logical
-      if (is.logical(ori[i, col])) {
-        out[i, col] <- bool(ori[i, col, drop = TRUE])
+      if (is.logical(ori[ibody, col])) {
+        out[ibody, col] <- bool(ori[ibody, col, drop = TRUE])
 
       # date
-      } else if (inherits(ori[i, col], "Date")) {
-        out[i, col] <- format(ori[i, col, drop = TRUE], date)
+      } else if (inherits(ori[ibody, col], "Date")) {
+        out[ibody, col] <- format(ori[ibody, col, drop = TRUE], date)
 
       # numeric
-      } else if (is.numeric(ori[i, col, drop = TRUE])) {
-        # digits check needs to be done here to avoid the other() formatting from ori, which zaps the original setting
-
-        # numeric suffix
-        if (isTRUE(num_suffix) && !is.null(digits)) {
-          out[i, col] <- format_num_suffix(
-            ori[i, col, drop = TRUE],
-            digits = digits,
-            num_mark_big = num_mark_big,
-            num_mark_dec = num_mark_dec,
-            num_zero = num_zero,
-            num_fmt = num_fmt)
-
-        # non-integer numeric
-        } else if (is.numeric(ori[i, col]) && !isTRUE(check_integerish(ori[i, col])) && !is.null(digits)) {
-          if (num_fmt == "significant") {
-            out[i, col] <- format(ori[i, col, drop = TRUE],
-              digits = digits, drop0trailing = !num_zero,
-              big.mark = num_mark_big, decimal.mark = num_mark_dec,
-              scientific = FALSE)
-          } else if (num_fmt == "significant_cell") {
-            zzz <- function(z) {
-              format(z,
-                digits = digits, drop0trailing = !num_zero,
-                big.mark = num_mark_big, decimal.mark = num_mark_dec,
-                scientific = FALSE)
-            }
-            out[i, col] <- sapply(ori[i, col, drop = TRUE], zzz)
-          } else if (num_fmt == "decimal") {
-            out[i, col] <- formatC(ori[i, col, drop = TRUE],
-              digits = digits, format = "f", drop0trailing = !num_zero,
-              big.mark = num_mark_big, decimal.mark = num_mark_dec)
-
-            if (num_fmt == "scientific") {
-              out[i, col] <- formatC(ori[i, col, drop = TRUE],
-                digits = digits, format = "e", drop0trailing = !num_zero,
-                big.mark = num_mark_big, decimal.mark = num_mark_dec)
-            }
-          }
-
-        # integer
-        } else if (isTRUE(check_integerish(ori[i, col])) && !is.null(digits)) {
-          if (num_fmt == "scientific") {
-            out[i, col] <- formatC(ori[i, col, drop = TRUE],
-              digits = digits, format = "e", drop0trailing = !num_zero,
-              big.mark = num_mark_big, decimal.mark = num_mark_dec)
-          }
-        }
-        
+      } else if (is.numeric(ori[ibody, col, drop = TRUE])) {
+         tmp <- format_numeric(ori[ibody, col], 
+           num_suffix = num_suffix, 
+           digits = digits, 
+           num_mark_big = num_mark_big, 
+           num_mark_dec = num_mark_dec, 
+           num_zero = num_zero, 
+           num_fmt = num_fmt)
+        if (!is.null(tmp)) out[ibody, col] <- tmp
+         
+      # other
       } else {
-        out[i, col] <- other(ori[i, col, drop = TRUE])
+        out[ibody, col] <- other(ori[ibody, col, drop = TRUE])
       }
     }
 
     for (k in seq_along(replace)) {
-        idx <- ori[i, col, drop = TRUE] %in% replace[[k]]
-        out[i, col][idx] <- names(replace)[[k]]
+        idx <- ori[ibody, col, drop = TRUE] %in% replace[[k]]
+        out[ibody, col][idx] <- names(replace)[[k]]
     }
 
   } # loop over columns
@@ -306,7 +257,7 @@ format_tt_lazy <- function(x,
   # before escaping
   if (is.function(fn)) {
     for (col in j) {
-      out[i, col] <- fn(ori[i, col, drop = TRUE])
+      out[ibody, col] <- fn(ori[ibody, col, drop = TRUE])
     }
   }
 
@@ -324,20 +275,21 @@ format_tt_lazy <- function(x,
       o <- FALSE
     }
 
-    if (!inull && jnull) {
+    # body
+    for (row in ibody) {
       for (col in j) {
-        out[i, col] <- escape_text(out[i, col], output = o)
+        out[row, col] <- escape_text(out[row, col], output = o)
       }
+    }
 
-    } else if (inull && jnull) {
-      for (col in j) {
-        out[, col] <- escape_text(out[, col], output = o)
-      }
+    # column names
+    if (0 %in% i) {
+      colnames(x) <- escape_text(colnames(x), output = o)
+    }
 
-      colnames(out) <- escape_text(colnames(out), output = o)
-
+    # caption & groups: if i and j are both null
+    if (inull && jnull) {
       if (inherits(x, "tinytable")) {
-        x@names <- escape_text(x@names, output = o)
         x@caption <- escape_text(x@caption, output = o)
 
         for (idx in seq_along(x@notes)) {
@@ -361,60 +313,40 @@ format_tt_lazy <- function(x,
           x@lazy_group[[idx]] <- g
         }
       }
-
-    } else {
-      for (row in i) {
-        for (col in j) {
-          out[row, col] <- escape_text(out[row, col], output = o)
-        }
-      }
     }
   }
 
-  # markdown at the very end
-  if (isTRUE(markdown)) {
-    assert_dependency("markdown")
-    for (col in j) {
-      if (inherits(x, "tinytable_bootstrap")) {
-        tmpfun <- function(k) {
-          k <- trimws(markdown::mark_html(text = k, template = FALSE))
-          k <- sub("<p>", "", k, fixed = TRUE)
-          k <- sub("</p>", "", k, fixed = TRUE)
-          return(k)
-        }
-        out[i, col] <- sapply(out[i, col], function(k) tmpfun(k))
-      } else if (inherits(x, "tinytable_tabularray")) {
-        tmpfun <- function(k) {
-          k <- trimws(markdown::mark_latex(text = k, template = FALSE))
-          return(k)
-        }
-        out[i, col] <- sapply(out[i, col], function(k) tmpfun(k))
-      }
+  # markdown and quarto at the very end
+  for (col in j) {
+    if (isTRUE(markdown)) {
+      assert_dependency("markdown")
+      out <- format_markdown(out = out, i = i, col = col, x = x)
+    }
+
+    if (isTRUE(quarto)) {
+      tmp <- format_quarto(out = out, i = i, col = col, x = x)
+      out <- tmp$out
+      x <- tmp$x
     }
   }
 
-  # quarto at the very end
-  if (isTRUE(quarto)) {
-      if (isTRUE(check_dependency("knitr"))) {
-          if (knitr::is_html_output()) {
-              fun <- function(z) {
-                  z@table_string <- sub("data-quarto-disable-processing='true'",
-                                        "data-quarto-disable-processing='false'",
-                                        z@table_string,
-                                        fixed = TRUE)
-                  return(z)
-              }
-              x <- style_tt(x, finalize = fun)
-              out[i, col] <- sprintf('<span data-qmd="%s"></span>', ori[i, col, drop = TRUE])
-          } else {#if (knitr::is_latex_output()) {
-              assert_dependency("base64enc")
-              tmp <- sapply(ori[i, col, drop = TRUE], function(z) base64enc::base64encode(charToRaw(z)))
-              out[i, col] <- sprintf('\\QuartoMarkdownBase64{%s}', tmp)
-          }
-      }
-  }
+    if (inull && jnull) {
+        colnames(x) <- format_markdown(colnames(x), x = x)
+        if (inherits(x, "tinytable")) {
+            for (k in seq_along(x@lazy_group)) {
+                g <- x@lazy_group[[k]]
+                if (!is.null(g$j)) {
+                    names(g$j) <- format_markdown(names(g$j), x = x)
+                }
+                if (!is.null(g$i)) {
+                    names(g$i) <- format_markdown(names(g$i), x = x)
+                }
+                x@lazy_group[[k]] <- g
+            }
+        }
+    }
 
-
+  # output
   if (isTRUE(atomic_vector)) {
     return(out[[1]])
   } else if (!inherits(x, "tinytable")) {
@@ -423,30 +355,60 @@ format_tt_lazy <- function(x,
     x@table_dataframe <- out
     return(x)
   }
-
 }
 
 
+format_markdown <- function(out, i = NULL, col = NULL, x) {
+    tmpfun_html <- function(k) {
+        k <- trimws(markdown::mark_html(text = k, template = FALSE))
+        k <- sub("<p>", "", k, fixed = TRUE)
+        k <- sub("</p>", "", k, fixed = TRUE)
+        return(k)
+    }
 
-format_num_suffix <- function(x, digits, num_mark_big, num_mark_dec, num_zero, num_fmt) {
-  suffix <- number <- rep("", length(x))
-  suffix <- ifelse(x > 1e3, "K", suffix)
-  suffix <- ifelse(x > 1e6, "M", suffix)
-  suffix <- ifelse(x > 1e9, "B", suffix)
-  suffix <- ifelse(x > 1e12, "T", suffix)
-  fun <- function(x) {
-    out <- sapply(x, function(k) {
-      format(k,
-        digits = digits, drop0trailing = !num_zero, type = "f",
-        big.mark = num_mark_big, decimal.mark = num_mark_dec,
-        scientific = FALSE)
-    })
+    tmpfun_latex <- function(k) {
+        k <- trimws(markdown::mark_latex(text = k, template = FALSE))
+        return(k)
+    }
+
+    if (inherits(out, "data.frame")) {
+        ipos <- i[i > 0]
+        if (length(ipos) > 0) {
+            if (inherits(x, "tinytable_bootstrap")) {
+                out[ipos, col] <- sapply(out[ipos, col], function(k) tmpfun_html(k))
+            } else if (inherits(x, "tinytable_tabularray")) {
+                out[ipos, col] <- sapply(out[ipos, col], function(k) tmpfun_latex(k))
+            }
+        }
+    } else {
+        if (inherits(x, "tinytable_bootstrap")) {
+            out <- sapply(out, function(k) tmpfun_html(k))
+        } else if (inherits(x, "tinytable_tabularray")) {
+            out <- sapply(out, function(k) tmpfun_latex(k))
+        } 
+    }
+
+    return(out)
+}
+
+
+format_quarto <- function(out, i, col, x) {
+  if (isTRUE(x@output == "html")) {
+    fun <- function(z) {
+      z@table_string <- sub("data-quarto-disable-processing='true'",
+        "data-quarto-disable-processing='false'",
+        z@table_string,
+        fixed = TRUE)
+      return(z)
+    }
+    x <- style_tt(x, finalize = fun)
+    out[i, col] <- sprintf('<span data-qmd="%s"></span>', out[i, col, drop = TRUE])
+  } else if (isTRUE(x@output == "latex")) {
+    assert_dependency("base64enc")
+    tmp <- sapply(out[i, col, drop = TRUE], function(z) base64enc::base64encode(charToRaw(z)))
+    out[i, col] <- sprintf("\\QuartoMarkdownBase64{%s}", tmp)
   }
-  number <- fun(x)
-  number <- ifelse(x > 1e3, fun(x / 1e3), number)
-  number <- ifelse(x > 1e6, fun(x / 1e6), number)
-  number <- ifelse(x > 1e9, fun(x / 1e9), number)
-  number <- ifelse(x > 1e12, fun(x / 1e12), number)
-  number <- paste0(number, suffix)
-  return(number)
+  
+  return(list("out" = out, "x" = x))
 }
+

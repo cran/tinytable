@@ -1,12 +1,11 @@
-#' Print a tinytable object in knitr 
+#' Print a tinytable object in knitr
 #'
 #' @keywords internal
 #' @return A string with class `knit_asis` to be printed in Rmarkdown or Quarto documents.
 #' @export
 knit_print.tinytable <- function(x,
-                                 output = getOption("tinytable_print_output", default = NULL),
+                                 output = get_option("tinytable_print_output", default = NULL),
                                  ...) {
-
   # lazy styles get evaluated here, at the very end
   x <- build_tt(x, output = output)
   out <- x@table_string
@@ -39,23 +38,22 @@ knit_print.tinytable <- function(x,
 
 
 #' Print, display, or convert a tinytable object
-#' 
+#'
 #' This function is called automatically by `R` whenever a `tinytable` object is anprinted to the console or in an HTML viewer pane.
-#' 
+#'
 #' @inheritParams tt
 #' @param output format in which a Tiny Table is printed: `NULL` or one of `"latex"`, `"markdown"`, `"html"`, `"typst"`, `"dataframe"`. If `NULL`, the output is chosen based on these rules:
 #' + When called from a script in non-interactive mode, the default is "markdown" (`interactive() == FALSE`).
 #' + When called interactively in RStudio, the default is to display an HTML table in the viewer pane.
-#' + When called interactively in another development environment, the default is "markdown". 
+#' + When called interactively in another development environment, the default is "markdown".
 #' + The default print output can be changed for an entire R session by calling: `options(tinytable_print_output = "html")`
 #' + The default print output can be changed for a single `tinytable` object by modifying the `output` S4 slot.
 #' @param ... Other arguments are ignored.
 #' @return launch a browser window or cat() the table to console.
 #' @export
 print.tinytable <- function(x,
-                            output = getOption("tinytable_print_output", default = NULL),
-                            ...){
-
+                            output = get_option("tinytable_print_output", default = NULL),
+                            ...) {
   if (is.null(output)) {
     output <- sanitize_output(x@output)
   } else {
@@ -73,30 +71,28 @@ print.tinytable <- function(x,
   tab <- x@table_string
 
   # lazy styles get evaluated here by build_tt(), at the very end
-  if (output %in% c("latex", "typst", "markdown")) {
+  if (output %in% c("latex", "typst", "markdown", "gfm")) {
     cat(tab, "\n")
-
   } else if (output == "html") {
-    # need to change the output directory to a temporary directory 
+    # need to change the output directory to a temporary directory
     # for plot_tt() inline plots to show up in RStudio
     htmlFile <- file.path(dir, "index.html")
     cat(tab, file = htmlFile)
 
-    if (isTRUE(interactive()) && isTRUE(check_dependency("rstudioapi")) && rstudioapi::isAvailable()) {
-      rstudioapi::viewer(htmlFile)
-
-    } else if (interactive()) {
+    if (interactive()) {
       msg <- "Please choose a default browser with:
 
       options(browser = 'firefox')
       "
-      if (identical(getOption("browser"), "")) stop(msg, call. = FALSE)
-      utils::browseURL(htmlFile)
+      if (identical(getOption("browser"), "")) {
+        stop(msg, call. = FALSE)
+      }
 
+      viewer <- getOption("viewer", utils::browseURL)
+      viewer(htmlFile)
     } else {
       cat(tab, "\n")
     }
-
   } else {
     return(x@table_dataframe)
   }
@@ -106,5 +102,5 @@ print.tinytable <- function(x,
 
 
 setMethod("show", "tinytable", function(object) {
-  print.tinytable(object, output = getOption("tinytable_print_output", default = NULL))
+  print.tinytable(object, output = get_option("tinytable_print_output", default = NULL))
 })

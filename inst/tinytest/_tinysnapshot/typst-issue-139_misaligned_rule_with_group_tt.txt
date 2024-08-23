@@ -1,14 +1,14 @@
-#[
+#show figure: set block(breakable: true)
+#figure( // start figure preamble
+  
+  kind: "tinytable",
+  supplement: "Table", // end figure preamble
+
+block[ // start block
+
 #let nhead = 2;
 #let nrow = 12;
 #let ncol = 5;
-
-// start figure preamble
-#figure(
-  
-  kind: "tinytable",
-  supplement: none,
-// end figure preamble
 
   #let fill-array = ( 
     // tinytable cell fill after
@@ -40,38 +40,119 @@
   )
   #let style-array = ( 
     // tinytable cell style after
-    (y: 6, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 6, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 6, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 6, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 6, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 5, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 5, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 5, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 5, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 5, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 4, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 4, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 4, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 4, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 4, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 3, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 3, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 3, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 3, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 3, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 2, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 2, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 2, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 2, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
-    (y: 2, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em),
+    (y: 13, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 13, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 13, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 13, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 13, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 12, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 12, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 12, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 12, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 12, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 11, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 11, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 11, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 11, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 11, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 10, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 10, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 10, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 10, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 10, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 9, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 9, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 9, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 9, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 9, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 7, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 7, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 7, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 7, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 7, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 6, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 6, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 6, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 6, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 6, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 5, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 5, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 5, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 5, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 5, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 4, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 4, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 4, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 4, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 4, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 2, x: 4, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 2, x: 3, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 2, x: 2, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 2, x: 1, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 2, x: 0, color: black, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: 1em),
+    (y: 6, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 6, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 6, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 6, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 6, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 5, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 5, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 5, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 5, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 5, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 4, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 4, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 4, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 4, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 4, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 3, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 3, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 3, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 3, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 3, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 2, x: 4, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 2, x: 3, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 2, x: 2, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 2, x: 1, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
+    (y: 2, x: 0, color: white, underline: false, italic: false, bold: false, mono: false, strikeout: false, fontsize: 1em, indent: false),
   )
+  #let align-array = (
+    // tinytable cell align after
+    (y: 6, x: 4, align: center),
+    (y: 6, x: 3, align: center),
+    (y: 6, x: 2, align: center),
+    (y: 6, x: 1, align: center),
+    (y: 6, x: 0, align: center),
+    (y: 5, x: 4, align: center),
+    (y: 5, x: 3, align: center),
+    (y: 5, x: 2, align: center),
+    (y: 5, x: 1, align: center),
+    (y: 5, x: 0, align: center),
+    (y: 4, x: 4, align: center),
+    (y: 4, x: 3, align: center),
+    (y: 4, x: 2, align: center),
+    (y: 4, x: 1, align: center),
+    (y: 4, x: 0, align: center),
+    (y: 3, x: 4, align: center),
+    (y: 3, x: 3, align: center),
+    (y: 3, x: 2, align: center),
+    (y: 3, x: 1, align: center),
+    (y: 3, x: 0, align: center),
+    (y: 2, x: 4, align: center),
+    (y: 2, x: 3, align: center),
+    (y: 2, x: 2, align: center),
+    (y: 2, x: 1, align: center),
+    (y: 2, x: 0, align: center),
+  )
+  // tinytable align-default-array after
+  #let align-default-array = ( left, left, left, left, left, ) // tinytable align-default-array here
   #show table.cell: it => {
     let tmp = it
     let data = style-array.find(data => data.x == it.x and data.y == it.y)
     if data != none {
       set text(data.color)
       set text(data.fontsize)
+      if data.indent != false { tmp = pad(left: data.indent, tmp) }
       if data.underline == true { tmp = underline(tmp) }
       if data.italic == true { tmp = emph(tmp) }
       if data.bold == true { tmp = strong(tmp) }
@@ -85,11 +166,17 @@
 
   #align(center, [
 
-  table( // tinytable table start
-align: (center),
-    column-gutter: 5pt,
+  #table( // tinytable table start
     columns: (auto, auto, auto, auto, auto),
     stroke: none,
+    align: (x, y) => {
+      let data = align-array.find(data => data.x == x and data.y == y)
+      if data != none {
+        data.align
+      } else {
+        align-default-array.at(x)
+      }
+    },
     fill: (x, y) => {
       let data = fill-array.find(data => data.x == x and data.y == y)
       if data != none {
@@ -129,5 +216,5 @@ table.cell(colspan: 5)[Brie],
 
   ]) // end align
 
-) // end figure
-] 
+] // end block
+) // end figure 

@@ -19,9 +19,9 @@ expect_equivalent(b, c("99T", "7.3B", "29M", "94K"))
 options(tinytable_print_output = "markdown")
 
 dat <- data.frame(
-     a = c("Burger", "Halloumi", "Tofu", "Beans"),
-     b = c(1.43202, 201.399, 0.146188, 0.0031),
-     c = c(98938272783457, 7288839482, 29111727, 93945))
+  a = c("Burger", "Halloumi", "Tofu", "Beans"),
+  b = c(1.43202, 201.399, 0.146188, 0.0031),
+  c = c(98938272783457, 7288839482, 29111727, 93945))
 tab <- tt(dat) |>
   format_tt(j = "a", sprintf = "Food: %s") |>
   format_tt(j = 2, digits = 1) |>
@@ -30,14 +30,14 @@ expect_snapshot_print(tab, label = "format_tt-num_suffix_vignette")
 
 set.seed(1024)
 dat <- data.frame(
-     w = c(143002.2092, 201399.181, 100188.3883),
-     x = c(1.43402, 201.399, 0.134588),
-     y = as.Date(sample(1:1000, 3), origin = "1970-01-01"),
-     z = c(TRUE, TRUE, FALSE))
+  w = c(143002.2092, 201399.181, 100188.3883),
+  x = c(1.43402, 201.399, 0.134588),
+  y = as.Date(sample(1:1000, 3), origin = "1970-01-01"),
+  z = c(TRUE, TRUE, FALSE))
 tab <- tt(dat, digits = 2)
 expect_snapshot_print(tab, label = "format_tt-vignette_digits")
 
-tab <- tt(dat) |> 
+tab <- tt(dat) |>
   format_tt(
     j = 2:4,
     digits = 1,
@@ -57,14 +57,15 @@ expect_snapshot_print(
 
 
 # bug: duplicated columns with markdown html
-dat <- data.frame( markdown = c(
-  "This is _italic_ text.",
-  "This sentence ends with a superscript.^2^")
+dat <- data.frame(
+  markdown = c(
+    "This is _italic_ text.",
+    "This sentence ends with a superscript.^2^")
 )
 tab <- tt(dat) |>
   format_tt(j = 1, markdown = TRUE) |>
   style_tt(j = 1, align = "c")
-expect_snapshot_print(print_html(tab), "format_tt-vignette_html_markdown")
+expect_snapshot_print(print_html(tab), "format_tt-vignette_html_markdown.html")
 
 
 # custom formatting
@@ -109,25 +110,52 @@ expect_snapshot_print(tab, "format_tt-issue149")
 
 # Issue #218
 options(tinytable_print_output = "dataframe")
-tab <- data.frame(x = 1, y = Inf) |> tt() |> print()
+tab <- data.frame(x = 1, y = Inf) |>
+  tt() |>
+  print()
 expect_inherits(tab, "data.frame")
-tab <- data.frame(x = 1, y = NaN) |> tt() |> print()
+tab <- data.frame(x = 1, y = NaN) |>
+  tt() |>
+  print()
 expect_inherits(tab, "data.frame")
-tab <- data.frame(x = 1, y = NA) |> tt() |> print()
+tab <- data.frame(x = 1, y = NA) |>
+  tt() |>
+  print()
 expect_inherits(tab, "data.frame")
-tab <- data.frame(x = 1, y = Inf) |> tt() |> print()
+tab <- data.frame(x = 1, y = Inf) |>
+  tt() |>
+  print()
 expect_inherits(tab, "data.frame")
-tab <- data.frame(x = 1, y = Inf) |> tt() |> format_tt() |> print()
+tab <- data.frame(x = 1, y = Inf) |>
+  tt() |>
+  format_tt() |>
+  print()
 expect_inherits(tab, "data.frame")
-tab <- data.frame(x = 1, y = NaN) |> tt() |> format_tt() |> print()
+tab <- data.frame(x = 1, y = NaN) |>
+  tt() |>
+  format_tt() |>
+  print()
 expect_inherits(tab, "data.frame")
-tab <- data.frame(x = 1, y = NA) |> tt() |> format_tt() |> print()
+tab <- data.frame(x = 1, y = NA) |>
+  tt() |>
+  format_tt() |>
+  print()
 expect_inherits(tab, "data.frame")
 
 x <- data.frame(x = 1:5, y = c(pi, NA, NaN, -Inf, Inf))
 dict <- list("-" = c(NA, NaN), "Tiny" = -Inf, "Huge" = Inf)
-tab <- tt(x) |> format_tt(replace = dict) |> print()
+tab <- tt(x) |>
+  format_tt(replace = dict) |>
+  print()
 expect_equivalent(tab$y, c("3.141593", "-", "-", "Tiny", "Huge"))
+
+# Issue #256: big mark for integers
+tab <- data.frame(x = c(1332037, 1299128, 805058, 206840, 698511)) |>
+  tt() |>
+  format_tt(num_mark_big = " ", digits = 0, num_fmt = "decimal") |>
+  print("dataframe")
+expect_equivalent(tab$x, c("1 332 037", "1 299 128", "805 058", "206 840", "698 511"))
+
 
 x <- data.frame(x = pi, y = NA)
 options(tinytable_tt_digits = 2)
@@ -145,3 +173,23 @@ expect_equivalent(tab$y, "NA")
 options(tinytable_print_output = NULL)
 options(tinytable_tt_digits = NULL)
 options(tinytable_format_replace = NULL)
+
+
+
+# Issue #263: NA processing with Quarto doesn't work
+x <- data.frame(
+  Points = c(40, 0, 10, 10, 10, 10, 10, 20, 110),
+  Assignment = c(
+    "Analytical Assignments", "Team Project Part 0 - County Selection",
+    "Team Project Part 1 - Summary Background",
+    "Team Project Part 2 - SWOT Analysis",
+    "Team Project Part 3 - Strategic Direction/Action Plan",
+    "Team Project Part 4 - Evaluation Framework",
+    "Team Project Part 5 - Plan Presentation", "Class participation", "Total"
+  ),
+  Percent = c("36%", "0%", "9%", "9%", "9%", "9%", "9%", "18%", NA)
+)
+x <- tt(x) |>
+  format_tt(replace = "!", quarto = TRUE) |>
+  save_tt("latex")
+expect_true(grepl("IQ==", x))

@@ -11,14 +11,15 @@ theme_tt(x, theme, ...)
 
 \item{theme}{String. Name of the theme to apply. One of:
 \itemize{
-\item "grid": Vertical and horizontal rules around each cell.
-\item "void": No rules
 \item "bootstrap": Similar appearance to the default Bootstrap theme in HTML
-\item "striped": Grey stripes on alternating rows
-\item "tabular": No table environment (LaTeX) or Javascript/CSS (HTML)
-\item "resize": Scale a LaTeX \code{tinytable} to fit the \code{width} argument.
+\item "grid": Vertical and horizontal rules around each cell.
 \item "multipage": Long tables continue on the next page (LaTeX only)
 \item "placement": Position of the table environment (LaTeX)
+\item "rotate": Rotate a LaTeX or Typst table.
+\item "resize": Scale a LaTeX \code{tinytable} to fit the \code{width} argument.
+\item "striped": Grey stripes on alternating rows
+\item "tabular": Remove table environment (LaTeX) or Javascript/CSS (HTML)
+\item "void": No rules
 }}
 
 \item{...}{Additional arguments passed the themeing function. See the "Arguments" section below for a list of supported arguments for each theme.}
@@ -34,23 +35,60 @@ Each theme can have specific arguments, which are passed to the \code{theme_tt()
 \section{Arguments}{
 
 
-resize
-\itemize{
-\item \code{width}: A numeric value between 0.01 and 1, representing the proportion of the line width to use
-\item \code{direction}: "down", "up", "both" A string indicating if the table should be scaled in one direction. For example, "down" will only resize the table if it exceeds \verb{\\linewidth}
-}
-
 multipage
 \itemize{
 \item \code{rowhead}: Non-negative integer. The number of header rows to repeat on each page.
+\itemize{
+\item Set globally with \code{options("tinytable_theme_multipage_rowhead" = 1L)}
+}
 \item \code{rowfoot}: Non-negative integer. The number of footer rows to repeat on each page.
+\itemize{
+\item Set globally with \code{options("tinytable_theme_multipage_rowfoot" = 1L)}
+}
+}
+
+tabular
+\itemize{
+\item \code{style}:
+\itemize{
+\item "tabular": Drop all LaTeX dependencies and floating environments, except \verb{\\\\begin\{tabular\}}
+\item "tabularray": Drop all LaTeX dependencies and floating environments, except \verb{\\\\begin\{tblr\}}
+\item Set globally with \code{options("tinytable_theme_tabular_style" = "tblr")}
+}
 }
 
 placement
 \itemize{
+\item \code{horizontal} (Typst only): "l", "c", or "r" to align the table horizontally in the page.
+\itemize{
+\item Set globally with \code{options("tinytable_theme_placement_horizontal" = "l")}
+}
 \item \code{latex_float}: String to insert in square brackets after the LaTeX table environment, ex: "H", "htbp". The default value is controlled by a global option:
 \itemize{
-\item \code{options("tinytable_theme_placement_latex_float" = "H")}
+\item Set globally with \code{options("tinytable_theme_placement_latex_float" = "H")}
+}
+}
+
+resize
+\itemize{
+\item \code{width}: A numeric value between 0.01 and 1, representing the proportion of the line width to use
+\itemize{
+\item Set globally with \code{options("tinytable_theme_resize_width" = 0.9)}
+}
+\item \code{direction}: "down", "up", "both" A string indicating if the table should be scaled in one direction. For example, "down" will only resize the table if it exceeds \verb{\\linewidth}
+\itemize{
+\item Set globally with \code{options("tinytable_theme_resize_direction" = "down")}
+}
+}
+
+rotate
+\itemize{
+\item \code{angle}: Angle of the rotation. For example, `angle=90`` applies a half counter-clockwise turn.
+\item Caveats:
+\itemize{
+\item LaTeX and Typst only.
+\item Typst: In Quarto documents, rotation does not work because Quarto takes over the figure environment.
+\item LaTeX: In Quarto documents, captions must be specified using the \code{caption} argument in \code{tt()} rather than via Quarto chunk options.
 }
 }
 }

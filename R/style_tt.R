@@ -152,8 +152,9 @@ style_tt <- function (x,
     stop("The `width` argument is now in the `tt()` function.", call. = FALSE)
   }
 
-  # issue #759: reuse object with different styles across RevealJS slides requires new ID every time style_tt is called
-  out@id <- get_id("tinytable_")
+  ## issue #759: reuse object with different styles across RevealJS slides requires new ID every time style_tt is called
+  # This is a very bad idea. Breaks a ton of things. We need unique IDs.
+  # out@id <- get_id("tinytable_")
 
   cal <- call("style_tt_lazy",
   # out <- style_tt_lazy(
@@ -225,7 +226,8 @@ style_tt_lazy <- function (x,
 
   out <- x
 
-  j <- sanitize_j(j, x)
+  jval <- sanitize_j(j, x)
+  jnull <- isTRUE(attr(jval, "null"))
 
   # alignv can only be a single character for now
   assert_choice(alignv, c("t", "m", "b"), null.ok = TRUE)
@@ -241,7 +243,7 @@ style_tt_lazy <- function (x,
       for (align_character in align_split){
         assert_choice(align_character, c("c", "l", "r", "d"))
       }
-      if (is.null(j)) {
+      if (jnull) {
         j <- seq_len(x@ncol)
       }
     }
@@ -250,7 +252,7 @@ style_tt_lazy <- function (x,
   if (x@output == "typst") {
     nalign <- x@ncol
   } else {
-    nalign <- if (is.null(j)) x@ncol else length(j)
+    nalign <- if (jnull) x@ncol else length(jval)
   }
 
   if (!is.null(align)) {
@@ -259,7 +261,7 @@ style_tt_lazy <- function (x,
       msg <- sprintf("`align` must be a single character or a string of length %s.", nalign)
       stop(msg, call. = FALSE)
     } 
-    if (any(!align %in% c("c", "l", "r", "d"))) {
+    if (!all(align %in% c("c", "l", "r", "d"))) {
       msg <- "`align` must be characters c, l, r, or d."
       stop(msg, call. = FALSE)
     }
@@ -336,11 +338,13 @@ assert_style_tt <- function (x,
     }
   }
 
-  ival <- if (is.null(i)) x@nrow else i
-  jval <- if (is.null(j)) x@ncol else j
+  ival <- sanitize_i(i, x, pre_group_i = TRUE)
+  jval <- sanitize_j(j, x)
+  inull <- isTRUE(attr(ival, "null"))
+  jnull <- isTRUE(attr(jval, "null"))
 
   # 1
-  if (is.null(i) && is.null(j)) {
+  if (inull && jnull) {
     assert_length(color, len = 1, null.ok = TRUE)
     assert_length(background, len = 1, null.ok = TRUE)
     assert_length(fontsize, len = 1, null.ok = TRUE)
@@ -351,7 +355,7 @@ assert_style_tt <- function (x,
     assert_length(strikeout, len = 1)
 
   # 1 or #rows
-  } else if (!is.null(i) && is.null(j)) {
+  } else if (!inull && jnull) {
     assert_length(color, len = c(1, length(ival)), null.ok = TRUE)
     assert_length(background, len = c(1, length(ival)), null.ok = TRUE)
     assert_length(fontsize, len = c(1, length(ival)), null.ok = TRUE)
@@ -362,7 +366,7 @@ assert_style_tt <- function (x,
     assert_length(strikeout, len = c(1, length(ival)))
 
   # 1 or #cols
-  } else if (is.null(i) && !is.null(j)) {
+  } else if (inull && !jnull) {
     assert_length(color, len = c(1, length(jval)), null.ok = TRUE)
     assert_length(background, len = c(1, length(jval)), null.ok = TRUE)
     assert_length(fontsize, len = c(1, length(jval)), null.ok = TRUE)
@@ -373,7 +377,7 @@ assert_style_tt <- function (x,
     assert_length(strikeout, len = c(1, length(jval)))
 
   # 1 or #cells
-  } else if (!is.null(i) && !is.null(j)) {
+  } else if (!inull && !jnull) {
     assert_length(color, len = c(1, length(ival) * length(jval)), null.ok = TRUE)
     assert_length(background, len = c(1, length(ival) * length(jval)), null.ok = TRUE)
     assert_length(fontsize, len = c(1, length(ival) * length(jval)), null.ok = TRUE)

@@ -20,4 +20,3 @@ expect_equivalent(x@output, "typst")
 # void <- capture.output(x <- print(tab))
 # expect_equivalent(x@output, "html")
 
-options("tinytable_print_output" = NULL)

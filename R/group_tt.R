@@ -3,15 +3,18 @@
 #' @export
 #' @inheritParams tt
 #' @inheritParams style_tt
-#' @param i A named list of row indices to group. The names of the list will be used as labels.
+#' @param i A named list of row indices to group. The names of the list will be used as labels. The indices represent the position where labels should be inserted in the original table. For example,
+#' + `i=list("Hello"=5)`: insert the "Hello" label after the 4th row in the original table.
+#' + `i=list("Hello"=2, "World"=2)`: insert the two labels consecutively after the 1st row in the original table.
+#' + `i=list("Foo Bar"=0)`: insert the label in the first row after the header.
 #' @param j A named list of column indices to group. The names of the list will be used as labels. See examples below. Note: empty labels must be a space: " ".
 #' @param ... Other arguments are ignored.
 #' @return An object of class `tt` representing the table.
 #' @param indent integer number of `pt` to use when indenting the non-labelled rows.
-#' @details 
+#' @details
 #' Warning: The `style_tt()` can normally be used to style the group headers, as expected, but that feature is not available for Markdown and Word tables.
-#' @examples 
-#' 
+#' @examples
+#'
 #' tt(mtcars[1:10, 1:5]) |>
 #'   group_tt(
 #'     i = list(
@@ -20,13 +23,13 @@
 #'     j = list(
 #'       "Foo" = 2:3,
 #'       "Bar" = 4:5))
-#'       
+#'
 #' dat <- mtcars[1:9, 1:8]
 #' tt(dat) |>
 #'   group_tt(i = list(
 #'     "I like (fake) hamburgers" = 3,
 #'     "She prefers halloumi" = 4,
-#'     "They love tofu" = 7))  
+#'     "They love tofu" = 7))
 #'
 #' tt(dat) |>
 #'   group_tt(
@@ -34,13 +37,12 @@
 #'       "Hamburgers" = 1:3,
 #'       "Halloumi" = 4:5,
 #'       "Tofu" = 7))
-#'       
+#'
 #' x <- mtcars[1:5, 1:6]
 #' tt(x) |>
-#'   group_tt(j = list("Hello" = 1:2, "World" = 3:4, "Hello"=5:6)) |>
+#'   group_tt(j = list("Hello" = 1:2, "World" = 3:4, "Hello" = 5:6)) |>
 #'   group_tt(j = list("Foo" = 1:3, "Bar" = 4:6))
-#'       
-#'       
+#'
 group_tt <- function(x, i = NULL, j = NULL, indent = 1, ...) {
   # ... is important for ihead passing
 
@@ -54,9 +56,12 @@ group_tt <- function(x, i = NULL, j = NULL, indent = 1, ...) {
   # we don't need this as a list, and we use some sorting later
   i <- unlist(i)
 
+  x@ngroupi <- x@ngroupi + length(i)
+
   cal <- call("group_eval", i = i, j = j, indent = indent)
 
   x@lazy_group <- c(x@lazy_group, list(cal))
+
 
   return(x)
 }
@@ -64,7 +69,9 @@ group_tt <- function(x, i = NULL, j = NULL, indent = 1, ...) {
 
 
 sanitize_group_index <- function(idx, hi, orientation) {
-  if (is.null(idx)) return(idx)
+  if (is.null(idx)) {
+    return(idx)
+  }
   assert_list(idx, named = TRUE)
   for (n in names(idx)) {
     if (orientation == "row") {
@@ -73,7 +80,8 @@ sanitize_group_index <- function(idx, hi, orientation) {
       assert_integerish(idx[[n]], lower = 1, upper = hi, name = n)
     }
   }
-  if (anyDuplicated(unlist(idx)) > 0) stop("Duplicate group indices.", call. = FALSE)
+  # allow duplicated indices for consecutive rows
+  # if (anyDuplicated(unlist(idx)) > 0) stop("Duplicate group indices.", call. = FALSE)
   out <- lapply(idx, function(x) min(x):max(x))
   return(out)
 }

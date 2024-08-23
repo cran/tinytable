@@ -1,19 +1,21 @@
 #' tinytable S4 method
-#' 
+#'
 #' @keywords internal
 setMethod(
   f = "group_eval",
   signature = "tinytable_tabularray",
   definition = function(x, i = NULL, j = NULL, indent = 1, ...) {
-  # columns first to count headers properly
-  x <- group_tabularray_col(x, j, ...)
-  x <- group_tabularray_row(x, i, indent)
-  return(x)
-})
+    # columns first to count headers properly
+    x <- group_tabularray_col(x, j, ...)
+    x <- group_tabularray_row(x, i, indent)
+    return(x)
+  })
 
 
 group_tabularray_col <- function(x, j, ihead, ...) {
-  if (is.null(j)) return(x)
+  if (is.null(j)) {
+    return(x)
+  }
 
   out <- strsplit(x@table_string, split = "\\n")[[1]]
 
@@ -59,7 +61,12 @@ group_tabularray_col <- function(x, j, ihead, ...) {
 
 
 group_tabularray_row <- function(x, i, indent) {
-  if (is.null(i)) return(x)
+  if (is.null(i)) {
+    return(x)
+  }
+
+  # reverse order is important
+  i <- rev(sort(i))
 
   if (is.null(names(i))) {
     msg <- "`i` must be a named integer vector."
@@ -122,11 +129,11 @@ insert_values <- function(vec, values, positions) {
   positions <- positions[ord]
 
   # Create a vector of indices for the original vector
-  original_indices <- 1:length(vec)
+  original_indices <- seq_along(vec)
 
 
   # Insert values and update indices
-  for (i in 1:length(values)) {
+  for (i in seq_along(values)) {
     vec <- append(vec, values[i], after = positions[i] - 1)
     original_indices <- append(original_indices, NA, after = positions[i] - 1)
   }
@@ -134,4 +141,3 @@ insert_values <- function(vec, values, positions) {
   # Return the extended vector and the original indices vector
   return(data.frame(vec = vec, old = original_indices, new = seq_along(vec)))
 }
-

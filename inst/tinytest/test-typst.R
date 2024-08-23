@@ -5,11 +5,15 @@ options(tinytable_print_output = "typst")
 
 
 # semi complicated
+# Q
+# pkgload::load_all()
 tab <- tt(mtcars[1:4, 1:5], caption = "Hello World") |>
   group_tt(j = list("Group 1" = 4:5, "Group 2" = 2:3)) |>
   style_tt(j = 1:5, align = "lcccr") |>
   style_tt(i = 2, j = 1:3, strikeout = TRUE, bold = TRUE, background = "black", color = "white") |>
   style_tt(j = 1, color = "red", italic = TRUE)
+# print(tab)
+
 expect_snapshot_print(tab, label = "typst-complicated")
 
 
@@ -83,7 +87,7 @@ dat <- tt(dat) |>
     "I like (fake) hamburgers" = 3,
     "She prefers halloumi" = 4,
     "They love tofu" = 7))
-expect_snapshot_print(dat, label = "group_rows")
+expect_snapshot_print(dat, label = "typst-group_rows")
 
 # Group columns
 dat <- mtcars[1:9, 1:8]
