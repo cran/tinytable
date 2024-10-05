@@ -6,7 +6,7 @@
 #' Note: Markdown and Word tables only support these styles: italic, bold, strikeout. Moreover, the `style_tt()` function cannot be used to style headers inserted by the `group_tt()` function; instead, you should style the headers directly in the header definition using markdown syntax: `group_tt(i = list("*italic header*" = 2))`. These limitations are due to the fact that there is no markdown syntax for the other options, and that we create Word documents by converting a markdown table to .docx via the Pandoc software.
 #'
 #' @param x A table object created by `tt()`.
-#' @param i Row indices where the styling should be applied. Can be a single value or a vector. `i=0` is the header, and negative values are higher level headers. If `colspan` is used, `i` must be of length 1.
+#' @param i Row indices where the styling should be applied. Can be a single value, a vector, or a logical matrix with the same number of rows and columns as `x`. `i=0` is the header, and negative values are higher level headers.
 #' @param j Column indices where the styling should be applied. Can be:
 #' + Integer vectors indicating column positions.
 #' + Character vector indicating column names.
@@ -46,6 +46,7 @@
 #' @param bootstrap_css_rule String. Complete CSS rules (with curly braces, semicolon, etc.) that apply to the table class specified by the `bootstrap_class` argument.
 #' @param tabularray_inner A string that specifies the "inner" settings of a tabularray LaTeX table. 
 #' @param tabularray_outer A string that specifies the "outer" settings of a tabularray LaTeX table.
+#' @param output Apply style only to the output format specified by this argument. `NULL` means that we apply to all formats. 
 #' @param ... extra arguments are ignored
 #' @return An object of class `tt` representing the table.
 #' @template latex_preamble
@@ -144,9 +145,12 @@ style_tt <- function (x,
                       bootstrap_class = NULL,
                       bootstrap_css = NULL,
                       bootstrap_css_rule = NULL,
+                      output = NULL,
                       ...) {
 
   out <- x
+
+  assert_choice(output, c("typst", "latex", "html", "markdown", "gfm"), null.ok = TRUE)
 
   if ("width" %in% names(list(...))) {
     stop("The `width` argument is now in the `tt()` function.", call. = FALSE)
@@ -181,7 +185,8 @@ style_tt <- function (x,
               tabularray_outer = tabularray_outer,
               bootstrap_class = bootstrap_class,
               bootstrap_css = bootstrap_css,
-              bootstrap_css_rule = bootstrap_css_rule)
+              bootstrap_css_rule = bootstrap_css_rule,
+              output = output)
 
   if (isTRUE(list(...)[["tt_build_now"]])) {
     out <- eval(cal)
@@ -222,7 +227,8 @@ style_tt_lazy <- function (x,
                            tabularray_outer,
                            bootstrap_class,
                            bootstrap_css,
-                           bootstrap_css_rule) {
+                           bootstrap_css_rule,
+                           output) {
 
   out <- x
 

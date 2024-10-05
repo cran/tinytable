@@ -1,5 +1,28 @@
 # News
 
+## 0.5.0
+
+New:
+
+* `output="html_portable"` returns a portable HTML file, where `plot_tt()` encodes and embeds the images directly in the HTML code, rather than link to external images. Thanks to @J-Moravec for implementing this nice feature!
+* `format_tt()` gets a `math` argument to wrap cell content in $...$ math mode.
+* `group_tt(i = vec)` accepts a vector of labels of length equal to the number of rows in the dataset.
+* `tt()` gets an `escape` argument. Thanks to Cameron Patrick for the feature request.
+* The `i` argument in `style_tt()` now accepts a logical matrix of same dimensions as `x`, to style specific cells, rather than all combinations of `i` and `j` vectors. Thanks to @dhicks for the feature request #329.
+* `style_tt()` gets new `output` argument for conditional styling based on output format.
+* `names()` method now supported for both returning column names and re-assingning them. Issue #332.
+
+Typst:
+
+* Table code is much more concise and efficient.
+* Fix indexing bug for groups. Issue #323 and #343.
+* `style_tt()` can override cell styling with successive calls, and the call order is respected.
+* `options(tinytable_quarto_figure = FALSE)` wraps Typst tables in a `figure` environment in Quarto documents.
+
+Bugs:
+
+* `theme_tabular()` is no longer greedy in replacing `cmidrule`. Thanks to @jsr-p for code submission #349.
+
 ## 0.4.0
 
 ### Breaking change

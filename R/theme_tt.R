@@ -1,14 +1,4 @@
 theme_default <- function(x, ...) {
-    fn <- function(table) {
-        if (isTRUE(table@output == "typst")) {
-            table <- style_eval(table, i = 1 - table@nhead, line = "t", line_width = 0.1)
-            table <- style_eval(table, i = 0, line = "b", line_width = 0.05)
-            table <- style_eval(table, i = nrow(table), line = "b", line_width = 0.1)
-        }
-
-        return(table)
-    }
-    x <- style_tt(x, finalize = fn)
     x <- theme_tt(x, "placement")
     return(x)
 }
@@ -39,7 +29,7 @@ theme_tabular <- function(x,
                 tab <- lines_drop(tab, regex = "tabularray inner open", position = "equal")
                 tab <- lines_drop(tab, regex = "tabularray inner close", position = "equal")
                 tab <- lines_drop(tab, regex = "^colspec=\\{", position = "equal")
-                tab <- gsub("cmidrule\\[(.*)\\]", "cmidrule(\\1)", tab)
+                tab <- gsub("cmidrule\\[(.*?)\\]", "cmidrule(\\1)", tab)
                 tab <- gsub("\\{tblr\\}\\[*", "{tabular}", tab)
                 tab <- gsub("\\{talltblr\\}\\[", "{tabular}", tab)
                 tab <- gsub("\\{talltblr\\}", "{tabular}", tab)
@@ -152,7 +142,7 @@ theme_grid <- function(x, ...) {
         } else if (isTRUE(table@output == "typst")) {
             table@table_string <- sub(
                 "stroke: none,",
-                "stroke: true,",
+                "stroke: (paint: black),",
                 table@table_string)
         }
         return(table)
@@ -166,23 +156,15 @@ theme_grid <- function(x, ...) {
 
 theme_striped <- function(x, ...) {
     assert_class(x, "tinytable")
-    fn <- function(table) {
-        if (isTRUE(table@output == "typst")) {
-            table <- style_eval(table, i = 1 - table@nhead, line = "t", line_width = 0.1)
-            table <- style_eval(table, i = 0, line = "b", line_width = 0.05)
-            table <- style_eval(table, i = nrow(table), line = "b", line_width = 0.1)
-            table <- style_eval(table, i = 1 - table@nhead, line = "t", line_width = 0.1)
-            table <- style_eval(table, i = 0, line = "b", line_width = 0.05)
-            table <- style_eval(table, i = nrow(table), line = "b", line_width = 0.1)
-            table <- style_eval(table, i = seq(1, nrow(table), by = 2), background = "#ededed")
-        }
-        return(table)
-    }
     x <- style_tt(x,
-        finalize = fn, 
         tabularray_inner = "row{even}={bg=black!5!white}",
-        bootstrap_class = "table table-striped")
-    x <- theme_tt(x, "placement")
+        bootstrap_class = "table table-striped",
+        output = "latex")
+    x <- style_tt(x, 
+        i = seq(1, nrow(x), by = 2),
+        background = "#ededed",
+        output = "typst")
+    x <- theme_tt(x, "default")
     return(x)
 }
 

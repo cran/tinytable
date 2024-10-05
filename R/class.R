@@ -41,11 +41,13 @@ setClass(
         id = "character",
         bootstrap_class = "character",
         css = "data.frame",
+        style = "data.frame",
         lazy_format = "list",
         lazy_group = "list",
         lazy_style = "list",
         lazy_plot = "list",
-        lazy_finalize = "list"
+        lazy_finalize = "list",
+        portable = "logical"
         )
 )
 
@@ -76,6 +78,8 @@ setMethod("initialize", "tinytable", function(
   .Object@output <- "tinytable"
   .Object@output_dir <- getwd()
   .Object@css <- data.frame(i = NA, j = NA, bootstrap = NA, id = NA)
+  .Object@portable <- FALSE
+  .Object@style <- data.frame()
   # conditional: allows NULL user input
   if (!is.null(placement)) .Object@placement <- placement
   if (!is.null(caption)) .Object@caption <- caption
@@ -103,6 +107,12 @@ setMethod("ncol", "tinytable", function(x) return(x@ncol))
 #' @export
 setMethod("colnames", "tinytable", function(x) return(x@names))
 
+#' Method for a tinytable S4 object
+#' 
+#' @inheritParams tt
+#' @keywords internal
+#' @export
+setMethod("names", "tinytable", function(x) return(x@names))
 
 #' Method for a tinytable S4 object
 #' 
@@ -124,6 +134,25 @@ setReplaceMethod("colnames",
                  }
 )
 
+#' Method for a tinytable S4 object
+#' 
+#' @inheritParams tt
+#' @keywords internal
+#' @export
+setReplaceMethod("names",
+                 signature = "tinytable", 
+                 definition = function(x, value) {
+                   # Issue #306
+                   if (length(value) == 0) value <- NULL
+                   if (!is.null(value)) {
+                     assert_character(value, len = length(x@names))
+                   } else {
+                     if (x@nhead == 1) x@nhead <- 0
+                   }
+                   x@names <- value
+                   return(x)
+                 }
+)
 
 #' Dimensions a tinytable S4 object
 #' 

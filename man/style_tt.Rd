@@ -30,13 +30,14 @@ style_tt(
   bootstrap_class = NULL,
   bootstrap_css = NULL,
   bootstrap_css_rule = NULL,
+  output = NULL,
   ...
 )
 }
 \arguments{
 \item{x}{A table object created by \code{tt()}.}
 
-\item{i}{Row indices where the styling should be applied. Can be a single value or a vector. \code{i=0} is the header, and negative values are higher level headers. If \code{colspan} is used, \code{i} must be of length 1.}
+\item{i}{Row indices where the styling should be applied. Can be a single value, a vector, or a logical matrix with the same number of rows and columns as \code{x}. \code{i=0} is the header, and negative values are higher level headers.}
 
 \item{j}{Column indices where the styling should be applied. Can be:
 \itemize{
@@ -109,6 +110,8 @@ style_tt(
 \item{bootstrap_css}{Character vector. CSS style declarations to be applied to every cell defined by \code{i} and \code{j} (ex: \code{"font-weight: bold"}).}
 
 \item{bootstrap_css_rule}{String. Complete CSS rules (with curly braces, semicolon, etc.) that apply to the table class specified by the \code{bootstrap_class} argument.}
+
+\item{output}{Apply style only to the output format specified by this argument. \code{NULL} means that we apply to all formats.}
 
 \item{...}{extra arguments are ignored}
 }

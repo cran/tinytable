@@ -18,6 +18,7 @@ format_tt(
   date = get_option("tinytable_format_date", default = "\%Y-\%m-\%d"),
   bool = get_option("tinytable_format_bool", default = function(column)
     tools::toTitleCase(tolower(column))),
+  math = get_option("tinytable_format_math", default = FALSE),
   other = get_option("tinytable_format_other", default = as.character),
   replace = get_option("tinytable_format_replace", default = TRUE),
   escape = get_option("tinytable_format_escape", default = FALSE),
@@ -55,6 +56,8 @@ format_tt(
 \item{date}{A string passed to the \code{format()} function, such as "\%Y-\%m-\%d". See the "Details" section in \code{?strptime}}
 
 \item{bool}{A function to format logical columns. Defaults to title case.}
+
+\item{math}{Logical. If TRUE, wrap cell values in math mode \verb{$..$}. This is useful for LaTeX output or with HTML MathJax \code{options(tinytable_html_mathjax=TRUE)}.}
 
 \item{other}{A function to format columns of other types. Defaults to \code{as.character()}.}
 
@@ -95,7 +98,14 @@ If this function is applied several times to the same cell, the last transformat
 }
 \section{Global options}{
 
-\subsection{Quarto data processing}{
+\subsection{Quarto}{
+\subsection{Figure environment}{
+\itemize{
+\item \code{options("tinytable_quarto_figure" = FALSE)}: Typst only. Normally, it is best to allow Quarto to define the figure environment, so the default behavior is to not include one.
+}
+}
+
+\subsection{Data Processing}{
 
 The \code{format_tt(quarto=TRUE)} argument activates Quarto data processing for specific cells. This funcationality comes with  a few warnings:
 \enumerate{
@@ -115,9 +125,12 @@ tt(x) |> format_tt(i = 1, fn = fn)
 See this link for more details: https://quarto.org/docs/authoring/tables.html#disabling-quarto-table-processing
 }
 
+}
+
 \subsection{HTML}{
 \itemize{
-\item EXPERIMENTAL \code{options(tinytable_html_mathjax = TRUE)} inserts MathJax scripts in the HTML document. Warning: This may conflict with other elements of the page if MathJax is otherwise loaded.
+\item \code{options(tinytable_html_mathjax = TRUE)}: insert MathJax scripts in the HTML document. Warning: This may conflict with other elements of the page if MathJax is otherwise loaded.
+\item \code{options(tinytable_html_portable = TRUE)}: \code{plot_tt()} inserts base 64 encoded images directly in the HTML file rather than use external links.
 }
 }
 

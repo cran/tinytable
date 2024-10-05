@@ -12,6 +12,7 @@ tt(
   width = get_option("tinytable_tt_width", default = NULL),
   theme = get_option("tinytable_tt_theme", default = NULL),
   rownames = get_option("tinytable_tt_rownames", default = FALSE),
+  escape = get_option("tinytable_tt_escape", default = FALSE),
   ...
 )
 }
@@ -43,6 +44,8 @@ tt(
 }}
 
 \item{rownames}{Logical. If \code{TRUE}, rownames are included as the first column}
+
+\item{escape}{Logical. If \code{TRUE}, escape special characters in the table. Equivalent to \code{format_tt(tt(x), escape = TRUE)}.}
 
 \item{...}{Additional arguments are ignored}
 }
@@ -86,7 +89,14 @@ When rendering a document from Quarto or Rmarkdown directly to PDF, \code{tinyta
 
 \section{Global options}{
 
-\subsection{Quarto data processing}{
+\subsection{Quarto}{
+\subsection{Figure environment}{
+\itemize{
+\item \code{options("tinytable_quarto_figure" = FALSE)}: Typst only. Normally, it is best to allow Quarto to define the figure environment, so the default behavior is to not include one.
+}
+}
+
+\subsection{Data Processing}{
 
 The \code{format_tt(quarto=TRUE)} argument activates Quarto data processing for specific cells. This funcationality comes with  a few warnings:
 \enumerate{
@@ -106,9 +116,12 @@ tt(x) |> format_tt(i = 1, fn = fn)
 See this link for more details: https://quarto.org/docs/authoring/tables.html#disabling-quarto-table-processing
 }
 
+}
+
 \subsection{HTML}{
 \itemize{
-\item EXPERIMENTAL \code{options(tinytable_html_mathjax = TRUE)} inserts MathJax scripts in the HTML document. Warning: This may conflict with other elements of the page if MathJax is otherwise loaded.
+\item \code{options(tinytable_html_mathjax = TRUE)}: insert MathJax scripts in the HTML document. Warning: This may conflict with other elements of the page if MathJax is otherwise loaded.
+\item \code{options(tinytable_html_portable = TRUE)}: \code{plot_tt()} inserts base 64 encoded images directly in the HTML file rather than use external links.
 }
 }
 
