@@ -116,6 +116,17 @@ tab@output <- "typst"
 expect_snapshot_print(tab, label = "typst-issue323_group_tt_style_tt")
 
 
+# Frame
+tab <- tt(mtcars[1:5, 1:5]) |>
+    style_tt(2:3, 2:3, line_color = "red", line = "tblr", line_width = .05)
+tab@output <- "typst"
+expect_snapshot_print(tab, label = "typst-tblr")
+
+
+# Issue #357
+tab <- tt(head(iris), notes = "blah") |> save_tt("typst")
+expect_true(grepl('blah', tab))
+
 
 options(tinytable_print_output = NULL)
 

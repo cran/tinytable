@@ -4,7 +4,11 @@
 \alias{save_tt}
 \title{Save a Tiny Table to File}
 \usage{
-save_tt(x, output, overwrite = FALSE)
+save_tt(
+  x,
+  output,
+  overwrite = get_option("tinytable_save_overwrite", default = FALSE)
+)
 }
 \arguments{
 \item{x}{The tinytable object to be saved.}

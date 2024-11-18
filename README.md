@@ -72,7 +72,7 @@ want to benefit from the latest features—showcased on the package
 website—you should install from R-Universe:
 
 ``` r
-install.packages("tinytable", repos = "https://vincentarelbundock.r-universe.dev")
+install.packages("tinytable")
 ```
 
 Alternatively, you can install it from CRAN:
@@ -131,7 +131,7 @@ tt(x,
 
 ## Tutorial
 
-The `tinytable` 0.5.0 tutorial will take you much further. It is
+The `tinytable` 0.5.0.5 tutorial will take you much further. It is
 available in two formats:
 
 -   [Tutorial
@@ -146,6 +146,8 @@ available in two formats:
     -   [Plots and
         images](https://vincentarelbundock.github.io/tinytable/vignettes/plot.html)
     -   [Themes](https://vincentarelbundock.github.io/tinytable/vignettes/theme.html)
+    -   [Notebooks (Quarto, Rmarkdown, Bookdown,
+        etc.)](https://vincentarelbundock.github.io/tinytable/vignettes/notebooks.html)
     -   [Customization](https://vincentarelbundock.github.io/tinytable/vignettes/custom.html)
     -   [FAQ](https://vincentarelbundock.github.io/tinytable/vignettes/faq.html)
     -   [Alternatives](https://vincentarelbundock.github.io/tinytable/vignettes/alternatives.html)

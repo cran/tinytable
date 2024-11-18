@@ -1,5 +1,24 @@
 # News
 
+## 0.6.1
+
+* Bug fix: d-column LaTeX generated an error in some cases.
+
+## 0.6.0
+
+* Major refactor of the style internals. HTML, LaTeX, and Typst documents should be much more concise and efficient.
+* `theme_tt("spacing")`: Change the row and column spacing to create more compact or airy tables. LaTeX and HTML only. Thanks to @statzhero for feature request #353.
+* `style_tt()`: the `i` and `j` indices are now consistent in all formats. They refer to rows *after* the insertion of  row groups.
+* `save_tt()` respects `options(tinytable_save_overwrite=TRUE)`
+* LaTeX: Guard header rows when using `style_tt(align="d")`. Issue #367
+* Inline display in Quarto and Rmarkdown notebooks. `options(tinytable_print_rstudio_notebook = "inline")` or `"viewer"`
+
+Bugs:
+
+* Typst notes returned an error since the last release. Thanks to @DominikVogel for report #357.
+* Duplicate group labels are allowed in LaTeX with `group_tt()`. Thanks to @eeemda for report #362.
+
+
 ## 0.5.0
 
 New:

@@ -10,7 +10,7 @@ tt(
   caption = get_option("tinytable_tt_caption", default = NULL),
   notes = get_option("tinytable_tt_notes", default = NULL),
   width = get_option("tinytable_tt_width", default = NULL),
-  theme = get_option("tinytable_tt_theme", default = NULL),
+  theme = get_option("tinytable_tt_theme", default = "default"),
   rownames = get_option("tinytable_tt_rownames", default = FALSE),
   escape = get_option("tinytable_tt_escape", default = FALSE),
   ...
@@ -39,7 +39,7 @@ tt(
 
 \item{theme}{Function or string.
 \itemize{
-\item String: grid, resize, multipage, placement, rotate, striped, void, bootstrap, tabular
+\item String: bootstrap, grid, multipage, placement, revealjs, resize, rotate, spacing, striped, tabular, void
 \item Function: Applied to the \code{tinytable} object.
 }}
 
@@ -52,7 +52,7 @@ tt(
 \value{
 An object of class \code{tt} representing the table.
 
-The table object has S4 slots which hold information about the structure of the table. This meta-data can be accessed with the usual \code{@} accessor. In general, modifying the content of these slots is not recommended, but it can be useful to some developers, such as those who want to force print to a specific output format without calling \code{print()}.
+The table object has S4 slots which hold information about the structure of the table. Relying on or modifying the contents of these slots is strongly discouraged. Their names and contents could change at any time, and the \code{tinytable} developers do not consider changes to the internal structure of the output object to be a "breaking  change" for versioning or changelog purposes.
 }
 \description{
 The \code{tt} function renders a table in different formats with various styling options: HTML, Markdown, LaTeX, Word, PDF, PNG, or Typst. The table can be customized with additional functions:
@@ -72,7 +72,9 @@ The \code{tt} function renders a table in different formats with various styling
 
 \code{tinytable} uses the \code{tabularray} package from your LaTeX distribution to draw tables. \code{tabularray}, in turn, uses the special \code{tblr}, \code{talltblr}, and \code{longtblr} environments.
 
-When rendering a document from Quarto or Rmarkdown directly to PDF, \code{tinytable} will populate the LaTeX preamble automatically with all the required packages (except when code chunks are cached). For standalone LaTeX documents, these commands should be inserted in the preamble manually:
+When rendering a document from Quarto or Rmarkdown directly to PDF, \code{tinytable} will populate the LaTeX preamble automatically with all the required packages. For standalone LaTeX documents, these commands should be inserted in the preamble manually:
+
+Note: Your document will fail to compile to PDF in Quarto if you enable caching and you use tinytable due to missing LaTeX headers. To avoid this problem, set the option \verb{#| cache: false} for the chunk(s) where you use tinytable.
 
 \if{html}{\out{<div class="sourceCode latex">}}\preformatted{\\usepackage\{tabularray\}
 \\usepackage\{float\}
@@ -89,10 +91,16 @@ When rendering a document from Quarto or Rmarkdown directly to PDF, \code{tinyta
 
 \section{Global options}{
 
+
+Many global options can be used to set the default argument values of \code{tinytable} functions.
+For a full list, see:
+
+https://vincentarelbundock.github.io/tinytable/vignettes/options.html
 \subsection{Quarto}{
 \subsection{Figure environment}{
 \itemize{
 \item \code{options("tinytable_quarto_figure" = FALSE)}: Typst only. Normally, it is best to allow Quarto to define the figure environment, so the default behavior is to not include one.
+\item \code{options(tinytable_print_rstudio_notebook = "inline")}: Display tables "inline" or in the "viewer" in RStudio notebooks.
 }
 }
 
@@ -120,15 +128,27 @@ See this link for more details: https://quarto.org/docs/authoring/tables.html#di
 
 \subsection{HTML}{
 \itemize{
-\item \code{options(tinytable_html_mathjax = TRUE)}: insert MathJax scripts in the HTML document. Warning: This may conflict with other elements of the page if MathJax is otherwise loaded.
-\item \code{options(tinytable_html_portable = TRUE)}: \code{plot_tt()} inserts base 64 encoded images directly in the HTML file rather than use external links.
+\item \code{options(tinytable_html_mathjax = TRUE)}
+\itemize{
+\item insert MathJax scripts in the HTML document. Warning: This may conflict with other elements of the page if MathJax is otherwise loaded.
+}
+\item \code{options(tinytable_html_portable = TRUE)}
+\itemize{
+\item \code{plot_tt()} inserts base 64 encoded images directly in the HTML file rather than use external links.
+}
 }
 }
 
 \subsection{PDF}{
 \itemize{
-\item \code{options(tinytable_pdf_clean = TRUE)} deletes temporary and log files.
-\item \code{options(tinytable_pdf_engine = "xelatex")}: "xelatex", "pdflatex", "lualatex"
+\item \code{options(tinytable_pdf_clean = TRUE)}
+\itemize{
+\item deletes temporary and log files.
+}
+\item \code{options(tinytable_pdf_engine = "xelatex")}
+\itemize{
+\item "xelatex", "pdflatex", "lualatex"
+}
 }
 }
 }
