@@ -38,14 +38,6 @@ setMethod(
     sty$alignv[which(sty$alignv == "t")] <- "h"
     sty$alignv[which(sty$alignv == "m")] <- "m"
 
-    for (spec in stats::na.omit(sty$tabularray_inner)) {
-      x@table_string <- tabularray_insert(x@table_string, content = spec, type = "inner")
-    }
-
-    for (spec in stats::na.omit(sty$tabularray_outer)) {
-      x@table_string <- tabularray_insert(x@table_string, content = spec, type = "inner")
-    }
-
     set <- span <- rep("", nrow(rec))
 
     # d-column are column-wise, so we treat them here
@@ -103,7 +95,8 @@ setMethod(
       if (!is.na(as.numeric(fontsize))) {
         set[idx] <- sprintf(
           "%s font=\\fontsize{%sem}{%sem}\\selectfont,",
-          set[idx], fontsize, fontsize + 0.3)
+          set[idx], fontsize, fontsize + 0.3
+        )
       }
 
       halign <- sty$align[row]
@@ -133,8 +126,11 @@ setMethod(
         rec$line[idx] <- sty$line[row]
       }
 
-      if (!is.na(sty$line_color[row])) {
-        rec$line_color[idx] <- sty$line_color[row]
+      lcol <- sty$line_color[row]
+      if (!is.na(lcol)) {
+        x <- color_to_preamble(x, lcol)
+        if (grepl("^#", lcol)) lcol <- sub("^#", "c", lcol)
+        rec$line_color[idx] <- lcol
       }
 
       if (!is.na(sty$line_width[row])) {
@@ -181,7 +177,8 @@ setMethod(
     rows <- unique(rec[
       idx & rec$complete_row & !rec$complete_column,
       c("i", "set", "span"),
-      drop = FALSE])
+      drop = FALSE
+    ])
     spec <- by(rows, list(rows$set, rows$span), function(k) {
       sprintf("row{%s}={%s}{%s}", paste(k$i, collapse = ","), k$span, k$set)
     })
@@ -201,9 +198,11 @@ setMethod(
     # lines
     rec$lin <- "solid, "
     rec$lin <- ifelse(!is.na(rec$line_color),
-      paste0(rec$lin, rec$line_color), rec$lin)
+      paste0(rec$lin, rec$line_color), rec$lin
+    )
     rec$lin <- ifelse(!is.na(rec$line_width),
-      paste0(rec$lin, sprintf(", %sem", rec$line_width)), rec$lin)
+      paste0(rec$lin, sprintf(", %sem", rec$line_width)), rec$lin
+    )
     rec$lin[is.na(rec$line)] <- NA
 
     # horizontal lines
@@ -236,8 +235,18 @@ setMethod(
       x@table_string <- tabularray_insert(x@table_string, content = s, type = "inner")
     }
 
+    for (spec in unique(stats::na.omit(sty$tabularray_inner))) {
+      x@table_string <- tabularray_insert(x@table_string, content = spec, type = "inner")
+    }
+
+    for (spec in unique(stats::na.omit(sty$tabularray_outer))) {
+      x@table_string <- tabularray_insert(x@table_string, content = spec, type = "outer")
+    }
+
+
     return(x)
-  })
+  }
+)
 
 
 
@@ -287,8 +296,14 @@ color_to_preamble <- function(x, col) {
 get_dcolumn <- function(j, x) {
   siunitx <- get_option("tinytable_siunitx_table_format", default = "table-format=-%s.%s,table-align-text-before=false,table-align-text-after=false,input-symbols={-,\\*+()}")
   num <- unlist(x@table_dataframe[, j])
+
+  # empty cells
+  num <- sapply(num, trimws)
+  num <- num[sapply(num, nchar) > 0]
+
   num <- strsplit(num, "\\.")
   num <- lapply(num, function(k) if (length(k) == 1) c(k, " ") else k)
+
   left <- sapply(num, function(k) k[[1]])
   right <- sapply(num, function(k) k[[2]])
   left <- max(nchar(gsub("\\D", "", left)))

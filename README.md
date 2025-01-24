@@ -12,7 +12,7 @@
 ## What?
 
 `tinytable` is a small but powerful `R` package to draw beautiful tables
-in a variety of formats: HTML, LaTeX, Word, PDF, PNG, Markdown, and
+in a variety of formats: HTML, LaTeX, Word[1], PDF, PNG, Markdown, and
 Typst. The user interface is minimalist and easy to learn, while giving
 users access to powerful frameworks to create endlessly customizable
 tables.
@@ -29,8 +29,8 @@ package which was:
 -   *Simple*: Streamlined, consistent, and uncluttered user interface,
     with few functions to learn.
 -   *Flexible*: Expressive frameworks to customize tables in HTML and
-    LaTeX formats.[1]
--   *Zero-dependency*: Avoid importing any other `R` package.[2]
+    LaTeX formats.[2]
+-   *Zero-dependency*: Avoid importing any other `R` package.[3]
 -   *Concise*: Draw beautiful tables without typing a lot of code.
 -   *Safe*: User inputs are checked thoroughly, and informative errors
     are returned early.
@@ -59,11 +59,10 @@ three pillars:
     battle-tested and versatile frameworks like `Bootstrap` for HTML and
     `tabularray` for LaTeX.
 
-3.  [*Lightweight is the right weight.*](https://www.tinyverse.org/)
-    Some of the most popular table-drawing packages in the `R` ecosystem
-    are very heavy: A single `library()` call can sometimes load upwards
-    of 65 `R` packages. In contrast, `tinytable` imports zero 3rd party
-    `R` package by default.
+3.  Lightweight. Some of the most popular table-drawing packages in the
+    `R` ecosystem are very heavy: A single `library()` call can
+    sometimes load upwards of 65 `R` packages. In contrast, `tinytable`
+    imports zero 3rd party `R` package by default.
 
 ## Installation
 
@@ -131,7 +130,7 @@ tt(x,
 
 ## Tutorial
 
-The `tinytable` 0.5.0.5 tutorial will take you much further. It is
+The `tinytable` 0.6.1.7 tutorial will take you much further. It is
 available in two formats:
 
 -   [Tutorial
@@ -152,10 +151,13 @@ available in two formats:
     -   [FAQ](https://vincentarelbundock.github.io/tinytable/vignettes/faq.html)
     -   [Alternatives](https://vincentarelbundock.github.io/tinytable/vignettes/alternatives.html)
 
-[1] Other formats like Markdown and Typst are also available, but less
+[1] Styling options in Word are somewhat limited. See the FAQ page and
+the `style_tt()` documentation for details.
+
+[2] Other formats like Markdown and Typst are also available, but less
 flexible.
 
-[2] Some extra packages can be imported to access specific
+[3] Some extra packages can be imported to access specific
 functionality, such as integration with Quarto, inserting `ggplot2`
 objects as inline plots, and saving tables to PNG images or PDF
 documents.

@@ -11,15 +11,16 @@
 #' @param ... Other arguments are ignored.
 #' @return An object of class `tt` representing the table.
 #' @param indent integer number of `pt` to use when indenting the non-labelled rows.
+#' @template limitations_word_markdown
 #' @details
 #' Warning: The `style_tt()` can normally be used to style the group headers, as expected, but that feature is not available for Markdown and Word tables.
 #' @examples
 #'
 #' # vector of row labels
 #' dat <- data.frame(
-#'     label = c("a", "a", "a", "b", "b", "c", "a", "a"),
-#'     x1 = rnorm(8),
-#'     x2 = rnorm(8))
+#'   label = c("a", "a", "a", "b", "b", "c", "a", "a"),
+#'   x1 = rnorm(8),
+#'   x2 = rnorm(8))
 #' tt(dat[, 2:3]) |> group_tt(i = dat$label)
 #'
 #' # named lists of labels
@@ -51,7 +52,6 @@
 #'   group_tt(j = list("Hello" = 1:2, "World" = 3:4, "Hello" = 5:6)) |>
 #'   group_tt(j = list("Foo" = 1:3, "Bar" = 4:6))
 #'
-
 group_tt <- function(x, i = NULL, j = NULL, indent = 1, ...) {
   # ... is important for ihead passing
 
@@ -71,14 +71,14 @@ group_tt <- function(x, i = NULL, j = NULL, indent = 1, ...) {
   i <- unlist(i)
 
   if (!is.null(i)) {
-    if (x@ngroupi > 0) {
+    if (x@group_n_i > 0) {
       stop("Only one row-wise `group_tt(i = ...)` call is allowed.", call. = FALSE)
     }
 
-    x@ngroupi <- length(i)
-    x@nrow <- x@nrow + x@ngroupi
-    x@group_i_idx <- as.numeric(i)
-    
+    x@group_n_i <- length(i)
+    x@nrow <- x@nrow + x@group_n_i
+    x@group_index_i <- as.numeric(i) + cumsum(rep(1, length(as.numeric(i)))) - 1
+
     if (isTRUE(indent > 0)) {
       idx_indent <- setdiff(seq_len(nrow(x)), i + seq_along(i) - 1)
       x <- style_tt(x, i = idx_indent, j = 1, indent = indent)
@@ -97,6 +97,7 @@ group_tt <- function(x, i = NULL, j = NULL, indent = 1, ...) {
 }
 
 sanitize_group_vec2list <- function(vec) {
+  if (is.factor(vec)) vec <- as.character(vec)
   rle_result <- rle(vec)
   idx <- cumsum(c(1, utils::head(rle_result$lengths, -1)))
   idx <- as.list(idx)
