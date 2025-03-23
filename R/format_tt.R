@@ -188,6 +188,16 @@ format_tt_lazy <- function(x,
                            other,
                            inull,
                            jnull) {
+
+
+  if (inherits(x, "tbl_df")) {
+    assert_dependency("tibble")
+    x_is_tibble <- TRUE
+    x <- as.data.frame(x, check.names = FALSE)
+  } else {
+    x_is_tibble <- FALSE
+  }
+
   # format_tt() supports vectors
   if (isTRUE(check_atomic_vector(x))) {
     atomic_vector <- TRUE
@@ -360,7 +370,7 @@ format_tt_lazy <- function(x,
   # markdown and quarto at the very end
   for (col in j) {
     if (isTRUE(markdown)) {
-      assert_dependency("markdown")
+      assert_dependency("litedown")
       out <- format_markdown(out = out, i = i, col = col, x = x)
     }
 
@@ -391,6 +401,9 @@ format_tt_lazy <- function(x,
   if (isTRUE(atomic_vector)) {
     return(out[[1]])
   } else if (!inherits(x, "tinytable")) {
+    if (x_is_tibble) {
+      out <- tibble::as_tibble(out)
+    }
     return(out)
   } else {
     x@table_dataframe <- out
@@ -408,14 +421,14 @@ format_math <- function(out, math) {
 
 format_markdown <- function(out, i = NULL, col = NULL, x) {
   tmpfun_html <- function(k) {
-    k <- trimws(markdown::mark_html(text = k, template = FALSE))
+    k <- litedown::mark(I(k), "html")
     k <- sub("<p>", "", k, fixed = TRUE)
     k <- sub("</p>", "", k, fixed = TRUE)
     return(k)
   }
 
   tmpfun_latex <- function(k) {
-    k <- trimws(markdown::mark_latex(text = k, template = FALSE))
+    k <- litedown::mark(I(k), "latex")
     return(k)
   }
 

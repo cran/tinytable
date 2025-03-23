@@ -94,6 +94,19 @@ sanitize_output <- function(output) {
     out <- output
   }
 
+  if (isTRUE(check_dependency("litedown"))) {
+    fmt <- tryCatch(litedown::get_context("format"), error = function(e) NULL)
+    if (identical(fmt, "latex")) {
+      return("latex")
+    } else if (identical(fmt, "markdown")) {
+      return("markdown")
+    } else if (identical(fmt, "commonmark")) {
+      return("markdown")
+    } else if (identical(fmt, "html")) {
+      return("html")
+    }
+  }
+
   if (isTRUE(check_dependency("knitr"))) {
     if (isTRUE(knitr::pandoc_to() %in% c("latex", "beamer"))) {
       flag <- getOption("tinytable_latex_preamble", default = TRUE)
@@ -102,8 +115,8 @@ sanitize_output <- function(output) {
         usepackage_latex("tabularray", extra_lines = c(
           "\\usepackage[normalem]{ulem}",
           "\\usepackage{graphicx}",
+          "\\usepackage{rotating}",
           "\\UseTblrLibrary{booktabs}",
-          "\\UseTblrLibrary{rotating}",
           "\\UseTblrLibrary{siunitx}",
           "\\NewTableCommand{\\tinytableDefineColor}[3]{\\definecolor{#1}{#2}{#3}}",
           "\\newcommand{\\tinytableTabularrayUnderline}[1]{\\underline{#1}}",

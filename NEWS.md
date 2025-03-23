@@ -1,5 +1,22 @@
 # News
 
+## 0.8.0
+
+New:
+
+* Support for `litedown` notebooks with "latex", "html", or "markdown" output.
+
+Bugs:
+
+* `format_tt()` works on tibbles. Thanks to @jon-mellon for report #426.
+* Respects the "Chunk Output in Console" option in RStudio. Thanks to @richardohrvall for issue #851 on the `modelsummary` repository.
+* Function themes broke HTML tables. Thanks to @kazuyanagimoto for report #439.
+* `tabularray` LaTeX update breaks `theme_tt("rotating")`. Thanks to @kylebutts for report #444.
+
+Tests:
+
+* Using the latest `tinysnapshot` means snapshot tests are no longer sensitive to random seeds.
+
 ## 0.7.0
 
 Breaking change:
