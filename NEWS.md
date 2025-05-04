@@ -1,5 +1,19 @@
 # News
 
+## 0.9.0
+
+New:
+
+* `strip_tt()` function removes elements of an existing `tinytable` object.
+
+Bugs:
+
+* Typst footnotes with cell coordinates. Thanks to @sverrirarnors for report #456.
+
+Docs improvement:
+
+* Quarto issue with `-` as list. Thanks to Chris Goodman.
+
 ## 0.8.0
 
 New:

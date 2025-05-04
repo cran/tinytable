@@ -18,11 +18,14 @@ style_string_html <- function(n, styles) {
     n <- sprintf("<span style='color:%s'>%s</span>", styles[["color"]], n)
   }
   if (!is.null(styles[["fontsize"]])) {
-    n <- sprintf("<span style='font-size:%sem'>%s</span>", styles[["fontsize"]], n)
+    n <- sprintf(
+      "<span style='font-size:%sem'>%s</span>",
+      styles[["fontsize"]],
+      n
+    )
   }
   n
 }
-
 
 style_string_latex <- function(n, styles) {
   if (isTRUE(styles[["italic"]])) {
@@ -44,11 +47,15 @@ style_string_latex <- function(n, styles) {
     n <- sprintf("\\textcolor{%s}{%s}", styles[["color"]], n)
   }
   if (!is.null(styles[["fontsize"]])) {
-    n <- sprintf("{\\fontsize{%sem}{%sem}\\selectfont %s}", styles[["fontsize"]], styles[["fontsize"]], n)
+    n <- sprintf(
+      "{\\fontsize{%sem}{%sem}\\selectfont %s}",
+      styles[["fontsize"]],
+      styles[["fontsize"]],
+      n
+    )
   }
   n
 }
-
 
 style_string_typst <- function(n, styles) {
   sty <- NULL
@@ -80,21 +87,28 @@ style_string_typst <- function(n, styles) {
   return(out)
 }
 
-
 style_notes <- function(x) {
-  fun <- switch(x@output,
+  fun <- switch(
+    x@output,
     "typst" = style_string_typst,
     "html" = style_string_html,
     "html_portable" = style_string_html,
     "latex" = style_string_latex,
     function(k, ...) identity(k)
   )
-  x@notes <- lapply(x@notes, fun, x@style_notes)
+  for (i in seq_along(x@notes)) {
+    if (length(x@notes[[i]]) == 3 && "text" %in% names(x@notes[[i]])) {
+      x@notes[[i]][["text"]] <- fun(x@notes[[i]][["text"]], x@style_notes)
+    } else {
+      x@notes[[i]] <- fun(x@notes[[i]], x@style_notes)
+    }
+  }
   return(x)
 }
 
 style_caption <- function(x) {
-  fun <- switch(x@output,
+  fun <- switch(
+    x@output,
     "typst" = style_string_typst,
     "html" = style_string_html,
     "html_portable" = style_string_html,
