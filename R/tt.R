@@ -26,6 +26,7 @@
 #' * Multiple strings insert multiple notes sequentially: `list("Hello world", "Foo bar")`
 #' * A named list inserts a list with the name as superscript: `list("a" = list("Hello World"))`
 #' * A named list with positions inserts markers as superscripts inside table cells: `list("a" = list(i = 0:1, j = 2, text = "Hello World"))`
+#' @param colnames Logical. If `FALSE`, column names are omitted.
 #' @param rownames Logical. If `TRUE`, rownames are included as the first column
 #' @param escape Logical. If `TRUE`, escape special characters in the table. Equivalent to `format_tt(tt(x), escape = TRUE)`.
 #' @param ... Additional arguments are ignored
@@ -49,7 +50,8 @@
 #' tt(x,
 #'   theme = "striped",
 #'   width = 0.5,
-#'   caption = "Data about cars.")
+#'   caption = "Data about cars."
+#' )
 #'
 #' tt(x, notes = "Hello World!")
 #'
@@ -62,16 +64,16 @@
 #'
 #' @export
 tt <- function(
-  x,
-  digits = get_option("tinytable_tt_digits", default = NULL),
-  caption = get_option("tinytable_tt_caption", default = NULL),
-  notes = get_option("tinytable_tt_notes", default = NULL),
-  width = get_option("tinytable_tt_width", default = NULL),
-  theme = get_option("tinytable_tt_theme", default = "default"),
-  rownames = get_option("tinytable_tt_rownames", default = FALSE),
-  escape = get_option("tinytable_tt_escape", default = FALSE),
-  ...
-) {
+    x,
+    digits = get_option("tinytable_tt_digits", default = NULL),
+    caption = get_option("tinytable_tt_caption", default = NULL),
+    notes = get_option("tinytable_tt_notes", default = NULL),
+    width = get_option("tinytable_tt_width", default = NULL),
+    theme = get_option("tinytable_tt_theme", default = "default"),
+    colnames = get_option("tinytable_tt_colnames", default = TRUE),
+    rownames = get_option("tinytable_tt_rownames", default = FALSE),
+    escape = get_option("tinytable_tt_escape", default = FALSE),
+    ...) {
   dots <- list(...)
 
   # sanity checks
@@ -87,8 +89,19 @@ tt <- function(
   assert_data_frame(x, min_rows = 1, min_cols = 1)
   if (!isTRUE(identical(class(x), "data.frame"))) {
     cn <- colnames(x)
-    x <- as.data.frame(x, check.names = FALSE)
-    colnames(x) <- cn
+    # weird bug on as.data.frame.data.table() when there is no columns. in general, we don't want to modify in-place.
+    if (is.null(cn) && inherits(x, "data.table")) {
+      assert_dependency('data.table')
+      data.table::setDF(x)
+    } else {
+      x <- as.data.frame(x, check.names = FALSE)
+      colnames(x) <- cn
+    }
+  }
+
+  assert_flag(colnames)
+  if (!isTRUE(colnames)) {
+    colnames(x) <- NULL
   }
 
   # factors should all be characters (for replace, etc.)
@@ -138,7 +151,7 @@ tt <- function(
   out <- methods::new(
     "tinytable",
     data = x,
-    table = tab,
+    table_input = tab,
     caption = caption,
     notes = notes,
     theme = list(theme),

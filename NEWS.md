@@ -1,5 +1,23 @@
 # News
 
+## 0.10.0
+
+Bugs:
+
+* Major refactor of `rowspan` for HTML files. Thanks to @J-Moravec and @ASKurz for reports #355 and #457.
+* `theme_tt(x, "multipage")` failed to insert `rowhead` in LaTeX. Thanks to @sTeADone for report #460.
+* Error when `x` is a data.table without columns.
+* Adjust Markdown table width when `group_tt(i = )` labels are long. Thanks to @JohannesNE for report #469.
+
+Misc:
+
+* `group_tt()` argument `j` accepts a single string as delimiter (ex: `"_"`) when column names of the data frame include group names. Thanks to @sda030 for the feature request, a first implementation, and testing.
+* `style_tt(i = "groupi")` styles group rows.
+* `theme_revealjs()` now supports dark theme with `css = "dark"` argument.
+* Many improvements to the documentation and vignettes
+* New vignette with table of contents for CRAN
+* `tt()` gets a `colnames` argument, instead of having to delete names manually.
+
 ## 0.9.0
 
 New:
