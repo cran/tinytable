@@ -94,6 +94,8 @@ print.tinytable <- function(
     dir <- tempfile()
     dir.create(dir)
     x@output_dir <- dir
+  } else if (output == "dataframe") {
+    output <- "markdown"
   }
 
   x <- build_tt(x, output = output)
@@ -130,7 +132,7 @@ print.tinytable <- function(
       cat(tab, "\n")
     }
   } else {
-    return(x@table_dataframe)
+    return(x@body_data)
   }
 
   return(invisible(x))

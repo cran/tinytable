@@ -131,7 +131,7 @@ plot_tt_lazy <- function(
   assets = "tinytable_assets",
   ...
 ) {
-  out <- x@table_dataframe
+  out <- x@body_data
 
   if (!is.null(data)) {
     assert_dependency("ggplot2")
@@ -212,8 +212,8 @@ plot_tt_lazy <- function(
     cell <- "![](%s){ height=%s }"
     cell <- sprintf(cell, images, height * 16)
   } else if (isTRUE(x@output == "typst")) {
-    cell <- '#image("%s")'
-    cell <- sprintf(cell, images)
+    cell <- '#image("%s", height: %sem)'
+    cell <- sprintf(cell, images, height)
   } else if (isTRUE(x@output == "dataframe")) {
     cell <- "%s"
     cell <- sprintf(cell, images)
@@ -223,7 +223,7 @@ plot_tt_lazy <- function(
 
   out[i, j] <- cell
 
-  x@table_dataframe <- out
+  x@body_data <- out
 
   return(x)
 }
@@ -264,8 +264,9 @@ encode <- function(images) {
   assert_dependency("base64enc")
   ext <- tools::file_ext(images)
 
-  if (any(ext == ""))
+  if (any(ext == "")) {
     stop("Empty image extensions are not allowed", call. = FALSE)
+  }
 
   encoded <- sapply(images, base64enc::base64encode)
   sprintf("data:image/%s;base64, %s", ext, encoded)

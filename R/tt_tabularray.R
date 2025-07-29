@@ -10,8 +10,12 @@ setMethod(
     nrows <- nrow(x)
 
     tall <- FALSE
-    if (length(x@caption) > 0) tall <- TRUE
-    if (length(x@notes) > 0) tall <- TRUE
+    if (length(x@caption) > 0) {
+      tall <- TRUE
+    }
+    if (length(x@notes) > 0) {
+      tall <- TRUE
+    }
 
     # placement
     if (length(x@placement) == 1) {
@@ -31,7 +35,7 @@ setMethod(
     } else {
       header <- NULL
     }
-    body <- apply(as.data.frame(x@table_dataframe), 1, paste, collapse = " & ")
+    body <- apply(as.data.frame(x@body_data), 1, paste, collapse = " & ")
     body <- paste(body, "\\\\")
 
     # theme: booktabs
@@ -62,7 +66,7 @@ setMethod(
 
     if (length(x@caption) > 0) {
       spec <- sprintf("caption={%s},", x@caption[1])
-      out <- tabularray_insert(out, content = spec, type = "outer")
+      out <- insert_tabularray_content(out, content = spec, type = "outer")
     }
 
     if (length(x@width) == 0) {
@@ -70,22 +74,22 @@ setMethod(
     } else if (length(x@width) == 1) {
       tabularray_cols <- rep("X[]", ncol(x))
       spec <- sprintf("width={%s\\linewidth},", round(x@width, 4))
-      out <- tabularray_insert(out, content = spec, type = "inner")
+      out <- insert_tabularray_content(out, content = spec, type = "inner")
     } else if (length(x@width) > 1) {
       tabularray_cols <- sprintf("X[%s]", x@width)
       spec <- sprintf("width={%s\\linewidth},", round(sum(x@width), 4))
-      out <- tabularray_insert(out, content = spec, type = "inner")
+      out <- insert_tabularray_content(out, content = spec, type = "inner")
     }
 
     # colspec (we don't need rowspec)
     colspec <- sprintf("colspec={%s},", paste(tabularray_cols, collapse = ""))
-    out <- tabularray_insert(out, content = colspec, type = "inner")
+    out <- insert_tabularray_content(out, content = colspec, type = "inner")
 
     # notes
     if (length(x@notes) > 0) {
       if (length(x@caption) == 0) {
         # otherwise an empty caption is created automatically
-        out <- tabularray_insert(
+        out <- insert_tabularray_content(
           out,
           content = "entry=none,label=none",
           type = "outer"
@@ -109,7 +113,7 @@ setMethod(
       notes <- sapply(x@notes, function(n) if (is.list(n)) n$text else n)
       for (k in seq_along(notes)) {
         spec <- sprintf("note{%s}={%s}", lab[k], notes[k])
-        out <- tabularray_insert(out, content = spec, type = "outer")
+        out <- insert_tabularray_content(out, content = spec, type = "outer")
       }
     }
 

@@ -18,6 +18,7 @@
 #' @param width Table or column width.
 #' - Single numeric value smaller than or equal to 1 determines the full table width, in proportion of line width.
 #' - Numeric vector of length equal to the number of columns in `x` determines the width of each column, in proportion of line width. If the sum of `width` exceeds 1, each element is divided by `sum(width)`. This makes the table full-width with relative column sizes.
+#' @param height Row height in em units. Single numeric value greater than zero that determines the row height spacing.
 #' @param theme Function or string.
 #' - String: `r paste(setdiff(names(theme_dictionary), "default"), collapse = ", ")`
 #' - Function: Applied to the `tinytable` object.
@@ -64,16 +65,18 @@
 #'
 #' @export
 tt <- function(
-    x,
-    digits = get_option("tinytable_tt_digits", default = NULL),
-    caption = get_option("tinytable_tt_caption", default = NULL),
-    notes = get_option("tinytable_tt_notes", default = NULL),
-    width = get_option("tinytable_tt_width", default = NULL),
-    theme = get_option("tinytable_tt_theme", default = "default"),
-    colnames = get_option("tinytable_tt_colnames", default = TRUE),
-    rownames = get_option("tinytable_tt_rownames", default = FALSE),
-    escape = get_option("tinytable_tt_escape", default = FALSE),
-    ...) {
+  x,
+  digits = get_option("tinytable_tt_digits", default = NULL),
+  caption = get_option("tinytable_tt_caption", default = NULL),
+  notes = get_option("tinytable_tt_notes", default = NULL),
+  width = get_option("tinytable_tt_width", default = NULL),
+  height = get_option("tinytable_tt_height", default = NULL),
+  theme = get_option("tinytable_tt_theme", default = "default"),
+  colnames = get_option("tinytable_tt_colnames", default = TRUE),
+  rownames = get_option("tinytable_tt_rownames", default = FALSE),
+  escape = get_option("tinytable_tt_escape", default = FALSE),
+  ...
+) {
   dots <- list(...)
 
   # sanity checks
@@ -91,7 +94,7 @@ tt <- function(
     cn <- colnames(x)
     # weird bug on as.data.frame.data.table() when there is no columns. in general, we don't want to modify in-place.
     if (is.null(cn) && inherits(x, "data.table")) {
-      assert_dependency('data.table')
+      assert_dependency("data.table")
       data.table::setDF(x)
     } else {
       x <- as.data.frame(x, check.names = FALSE)
@@ -120,6 +123,8 @@ tt <- function(
   if (sum(width) > 1) {
     width <- width / sum(width)
   }
+
+  assert_numeric(height, lower = 0, len = 1, null.ok = TRUE)
 
   # bind the row names if the user explicitly asks for it in global option.
   # Same name as tibble::rownames_to_column()
@@ -151,11 +156,12 @@ tt <- function(
   out <- methods::new(
     "tinytable",
     data = x,
-    table_input = tab,
+    body_data = tab,
     caption = caption,
     notes = notes,
     theme = list(theme),
-    width = width
+    width = width,
+    height = height
   )
 
   if (is.null(theme)) {
@@ -170,6 +176,37 @@ tt <- function(
 
   if (isTRUE(escape)) {
     out <- format_tt(out, escape = TRUE)
+  }
+
+  if (!is.null(height)) {
+    # LaTeX tabularray: use height/2 as rowsep
+    out <- style_tt(
+      out,
+      tabularray_inner = sprintf("rowsep={%sem}", height / 2)
+    )
+
+    # Bootstrap/HTML: use CSS padding for row height
+    out <- style_tt(
+      out,
+      bootstrap_css = sprintf(
+        "padding-top: %sem; padding-bottom: %sem;",
+        height / 2,
+        height / 2
+      )
+    )
+
+    # Typst: use rows parameter in table settings
+    fun_typst_height <- function(table) {
+      if (!is.null(table@height)) {
+        table@table_string <- gsub(
+          "rows: auto,",
+          sprintf("rows: %sem,", table@height),
+          table@table_string
+        )
+      }
+      return(table)
+    }
+    out <- style_tt(out, finalize = fun_typst_height)
   }
 
   return(out)

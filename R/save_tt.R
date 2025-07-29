@@ -27,7 +27,7 @@
 #'
 save_tt <- function(
   x,
-  output,
+  output = get_option("tinytable_save_output", default = NULL),
   overwrite = get_option("tinytable_save_overwrite", default = FALSE)
 ) {
   assert_class(x, "tinytable")
@@ -65,8 +65,8 @@ save_tt <- function(
     out <- build_tt(x, output = "typst")@table_string
     return(as.character(out))
   } else if (identical(output, "dataframe")) {
-    out <- build_tt(x, output = "dataframe")@table_dataframe
-    return(as.character(out))
+    out <- build_tt(x, output = "dataframe")@body_data
+    return(out)
   }
 
   x@output_dir <- dirname(output)
@@ -86,7 +86,7 @@ save_tt <- function(
     "docx" = "markdown",
     "typ" = "typst",
     stop(
-      "The supported file extensions are: .png, .html, .pdf, .tex, .typ, .qmd, .Rmd, .txt, .docx, and .md.",
+      "The supported file extensions are: .png, .html, .pdf, .tex, .typ, .qmd, .Rmd, .txt, .docx, and .md. Supported output formats are: markdown, latex, html, typst, and dataframe.",
       call. = FALSE
     )
   )

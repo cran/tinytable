@@ -1,13 +1,191 @@
+# =============================================================================
+# HELPER FUNCTIONS
+# =============================================================================
+
+#' Apply styling to notes or caption
+#' @keywords internal
+#' @noRd
+apply_notes_caption_styling <- function(
+  x,
+  i,
+  color = NULL,
+  fontsize = NULL,
+  italic = FALSE,
+  monospace = FALSE,
+  strikeout = FALSE,
+  underline = FALSE
+) {
+  style_params <- list(
+    color = color,
+    fontsize = fontsize,
+    italic = italic,
+    monospace = monospace,
+    strikeout = strikeout,
+    underline = underline
+  )
+
+  if (identical(i, "notes")) {
+    x@style_notes <- style_params
+  } else if (identical(i, "caption")) {
+    x@style_caption <- style_params
+  }
+
+  return(x)
+}
+
+#' Set bootstrap-specific settings
+#' @keywords internal
+#' @noRd
+set_bootstrap_settings <- function(
+  x,
+  bootstrap_class = NULL,
+  bootstrap_css_rule = NULL
+) {
+  if (!is.null(bootstrap_class)) {
+    x@bootstrap_class <- bootstrap_class
+  }
+  if (!is.null(bootstrap_css_rule)) {
+    x@bootstrap_css_rule <- bootstrap_css_rule
+  }
+  return(x)
+}
+
+#' Process logical matrix input for styling
+#' @keywords internal
+#' @noRd
+process_logical_matrix_input <- function(x, i, j) {
+  if (!is.null(j)) {
+    stop("When `i` is a logical matrix, `j` must be NULL.", call. = FALSE)
+  }
+
+  settings <- which(i == TRUE, arr.ind = TRUE)
+  settings <- stats::setNames(data.frame(settings), c("i", "j"))
+  return(settings)
+}
+
+#' Process regular input for styling
+#' @keywords internal
+#' @noRd
+process_regular_input <- function(x, i, j) {
+  ival <- sanitize_i(i, x, calling_function = "style_tt")
+  jval <- sanitize_j(j, x)
+
+  # Create settings grid
+  settings <- expand.grid(i = ival, j = jval, tabularray = "")
+
+  # Order may be important for recycling
+  if (is.null(i) && !is.null(j)) {
+    settings <- settings[order(settings$i, settings$j), ]
+  }
+
+  return(settings)
+}
+
+
+#' Process align argument and add to settings
+#' @keywords internal
+#' @noRd
+process_align_argument <- function(settings, align, jval) {
+  if (is.null(align)) {
+    settings[["align"]] <- NA
+    return(settings)
+  }
+
+  if (nchar(align) == length(jval)) {
+    align_string <- strsplit(align, "")[[1]]
+    if (!all(align_string %in% c("c", "l", "r", "d"))) {
+      stop("`align` must be characters c, l, r, or d.", call. = FALSE)
+    }
+    align_string <- data.frame(j = jval, align = align_string)
+    settings <- merge(
+      settings,
+      align_string,
+      by = "j",
+      all.x = TRUE,
+      sort = FALSE
+    )
+  } else if (nchar(align) == 1) {
+    if (!align %in% c("c", "l", "r", "d")) {
+      stop("`align` must be characters c, l, r, or d.", call. = FALSE)
+    }
+    align_string <- data.frame(j = jval, align = align)
+    settings <- merge(
+      settings,
+      align_string,
+      by = "j",
+      all.x = TRUE,
+      sort = FALSE
+    )
+  } else {
+    msg <- sprintf(
+      "`align` must be a single character or a string of length %s.",
+      length(jval)
+    )
+    stop(msg, call. = FALSE)
+  }
+
+  return(settings)
+}
+
+#' Remove empty settings from dataframe
+#' @keywords internal
+#' @noRd
+remove_empty_settings <- function(settings) {
+  empty <- settings[, 4:ncol(settings)]
+  empty <- sapply(empty, function(x) is.na(x) | (is.logical(x) && !any(x)))
+
+  if (nrow(settings) == 1) {
+    empty <- all(empty)
+    settings <- settings[!empty, , drop = FALSE]
+  } else {
+    empty <- apply(empty, 1, all)
+    settings <- settings[!empty, , drop = FALSE]
+  }
+
+  return(settings)
+}
+
+#' Merge settings with existing styles
+#' @keywords internal
+#' @noRd
+merge_with_existing_styles <- function(x, settings) {
+  if (nrow(settings) == 0) {
+    return(x)
+  }
+
+  if (nrow(x@style) > 0 && ncol(x@style) != ncol(settings)) {
+    # Handle column mismatch
+    a <- x@style
+    b <- settings
+    if (!"tabularray" %in% colnames(a)) {
+      a$tabularray <- ""
+    }
+    if (!"tabularray" %in% colnames(b)) {
+      b$tabularray <- ""
+    }
+    settings <- rbind(a, b[, colnames(a)])
+    x@style <- unique(settings)
+  } else {
+    x@style <- rbind(x@style, settings)
+  }
+
+  return(x)
+}
+
+# =============================================================================
+# MAIN FUNCTION
+# =============================================================================
+
 #' Style a Tiny Table
 #'
 #' @details
 #' This function applies styling to a table created by `tt()`. It allows customization of text style (bold, italic, monospace), text and background colors, font size, cell width, text alignment, column span, and indentation. The function also supports passing native instructions to LaTeX (tabularray) and HTML (bootstrap) formats.
 #'
 #' @param x A table object created by `tt()`.
-#' @param i Numeric vector, logical matrix, or string..
+#' @param i Numeric vector, logical matrix, or string.
 #'   - Numeric vector: Row indices where the styling should be applied. Can be a single value or a vector.
 #'   - Logical matrix: A matrix with the same number of rows and columns as `x`. `i=0` is the header, and negative values are higher level headers. Row indices refer to rows *after* the insertion of row labels by `group_tt()`, when applicable.
-#'   - String: "caption", "groupi", "notes".
+#'   - String: Table components "caption", "colnames", "groupi" (row group labels), "~groupi" (non-group rows), "groupj" (column group labels), "notes".
 #' @param j Column indices where the styling should be applied. Can be:
 #' + Integer vectors indicating column positions.
 #' + Character vector indicating column names.
@@ -121,6 +299,14 @@
 #' tt(mtcars[1:5, 1:4], theme = "void") |>
 #'   style_tt(tabularray_inner = inner)
 #'
+#' # Style group rows and non-group rows
+#' dat <- data.frame(x = 1:6, y = letters[1:6])
+#' dat |>
+#'   tt() |>
+#'   group_tt(i = list("Group A" = 3)) |>
+#'   style_tt(i = "groupi", background = "lightblue") |>
+#'   style_tt(i = "~groupi", background = "lightgray")
+#'
 style_tt <- function(
   x,
   i = NULL,
@@ -152,8 +338,21 @@ style_tt <- function(
 ) {
   out <- x
 
-  assert_choice(alignv, c("t", "m", "b"), null.ok = TRUE)
+  # Handle special cases first (before validation)
+  if (isTRUE(i %in% c("notes", "caption"))) {
+    return(apply_notes_caption_styling(
+      out,
+      i,
+      color,
+      fontsize,
+      italic,
+      monospace,
+      strikeout,
+      underline
+    ))
+  }
 
+  # Validate inputs (after special cases)
   assert_style_tt(
     x = out,
     i = i,
@@ -167,6 +366,7 @@ style_tt <- function(
     background = background,
     fontsize = fontsize,
     align = align,
+    alignv = alignv,
     colspan = colspan,
     rowspan = rowspan,
     indent = indent,
@@ -176,71 +376,33 @@ style_tt <- function(
     tabularray_inner = tabularray_inner,
     tabularray_outer = tabularray_outer,
     bootstrap_css = bootstrap_css,
-    bootstrap_css_rule = bootstrap_css_rule
+    bootstrap_css_rule = bootstrap_css_rule,
+    output = output,
+    finalize = finalize,
+    ...
   )
 
-  if (isTRUE(i %in% c("notes", "caption"))) {
-    tmp <- list(
-      color = color,
-      fontsize = fontsize,
-      italic = italic,
-      monospace = monospace,
-      strikeout = strikeout,
-      underline = underline
-    )
-    if (identical(i, "notes")) out@style_notes <- tmp
-    if (identical(i, "caption")) out@style_caption <- tmp
-    return(out)
-  } else if (identical(i, "groupi")) {
-    idx <- out@group_index_i
-    if (length(idx) == 0) {
-      msg <- "To style group labels, `group_tt()` must be called before `style_tt()`."
-      warning(msg, call. = FALSE)
-      return(out)
-    } else {
-      i <- idx
-    }
-  }
-
-  if (!is.null(bootstrap_class)) {
-    out@bootstrap_class <- bootstrap_class
-  }
-  if (!is.null(bootstrap_css_rule)) {
-    out@bootstrap_css_rule <- bootstrap_css_rule
-  }
+  # Set bootstrap settings
+  out <- set_bootstrap_settings(out, bootstrap_class, bootstrap_css_rule)
 
   sanity_align(align, i)
 
-  assert_choice(
-    output,
-    c("typst", "latex", "html", "markdown", "gfm"),
-    null.ok = TRUE
-  )
-
-  if ("width" %in% names(list(...))) {
-    stop("The `width` argument is now in the `tt()` function.", call. = FALSE)
-  }
-
-  # i is a logical matrix mask
+  # Process inputs and create settings
   if (
     is.matrix(i) && is.logical(i) && nrow(i) == nrow(x) && ncol(i) == ncol(x)
   ) {
-    assert_null(j)
-    settings <- which(i == TRUE, arr.ind = TRUE)
-    settings <- stats::setNames(data.frame(settings), c("i", "j"))
+    settings <- process_logical_matrix_input(x, i, j)
   } else {
-    ival <- sanitize_i(i, x)
-    jval <- sanitize_j(j, x)
-    # order may be important for recycling
-    settings <- expand.grid(i = ival, j = jval, tabularray = "")
-    if (is.null(i) && !is.null(j)) {
-      settings <- settings[order(settings$i, settings$j), ]
-    }
+    settings <- process_regular_input(x, i, j)
   }
 
+  # Build complete settings
   settings[["color"]] <- if (is.null(color)) NA else as.vector(color)
-  settings[["background"]] <- if (is.null(background)) NA else
+  settings[["background"]] <- if (is.null(background)) {
+    NA
+  } else {
     as.vector(background)
+  }
   settings[["fontsize"]] <- if (is.null(fontsize)) NA else as.vector(fontsize)
   settings[["alignv"]] <- if (is.null(alignv)) NA else alignv
   settings[["line"]] <- if (is.null(line)) NA else line
@@ -254,81 +416,36 @@ style_tt <- function(
   settings[["indent"]] <- if (is.null(indent)) NA else as.vector(indent)
   settings[["colspan"]] <- if (is.null(colspan)) NA else colspan
   settings[["rowspan"]] <- if (is.null(rowspan)) NA else rowspan
-  settings[["bootstrap_css_rule"]] <- if (!is.null(bootstrap_css_rule))
-    bootstrap_css_rule else NA
-  settings[["bootstrap_css"]] <- if (!is.null(bootstrap_css)) bootstrap_css else
+  settings[["bootstrap_css_rule"]] <- if (!is.null(bootstrap_css_rule)) {
+    bootstrap_css_rule
+  } else {
     NA
-  settings[["tabularray_inner"]] <- if (!is.null(tabularray_inner))
-    tabularray_inner else NA
-  settings[["tabularray_outer"]] <- if (!is.null(tabularray_outer))
-    tabularray_outer else NA
-
-  if (!is.null(align)) {
-    if (nchar(align) == length(jval)) {
-      align_string <- strsplit(align, "")[[1]]
-      if (!all(align_string %in% c("c", "l", "r", "d"))) {
-        msg <- "`align` must be characters c, l, r, or d."
-        stop(msg, call. = FALSE)
-      }
-      align_string <- data.frame(j = jval, align = align_string)
-      settings <- merge(
-        settings,
-        align_string,
-        by = "j",
-        all.x = TRUE,
-        sort = FALSE
-      )
-    } else if (nchar(align) == 1) {
-      assert_choice(align, c("c", "l", "r", "d"))
-      align_string <- data.frame(j = jval, align = align)
-      settings <- merge(
-        settings,
-        align_string,
-        by = "j",
-        all.x = TRUE,
-        sort = FALSE
-      )
-    } else {
-      msg <- sprintf(
-        "`align` must be a single character or a string of length %s.",
-        length(jval)
-      )
-      stop(msg, call. = FALSE)
-    }
+  }
+  settings[["bootstrap_css"]] <- if (!is.null(bootstrap_css)) {
+    bootstrap_css
   } else {
-    settings[["align"]] <- NA
+    NA
   }
-
-  empty <- settings[, 4:ncol(settings)]
-  empty <- sapply(empty, function(x) is.na(x) | (is.logical(x) && !any(x)))
-  if (nrow(settings) == 1) {
-    empty <- all(empty)
-    settings <- settings[!empty, , drop = FALSE]
+  settings[["tabularray_inner"]] <- if (!is.null(tabularray_inner)) {
+    tabularray_inner
   } else {
-    empty <- apply(empty, 1, all)
-    settings <- settings[!empty, , drop = FALSE]
+    NA
+  }
+  settings[["tabularray_outer"]] <- if (!is.null(tabularray_outer)) {
+    tabularray_outer
+  } else {
+    NA
   }
 
-  if (
-    nrow(out@style) > 0 &&
-      nrow(settings) > 0 &&
-      ncol(out@style) != ncol(settings)
-  ) {
-    a <- out@style
-    b <- settings
-    if (!"tabularray" %in% colnames(a)) a$tabularray <- ""
-    if (!"tabularray" %in% colnames(b)) b$tabularray <- ""
-    settings <- rbind(a, b[, colnames(a)])
-    out@style <- unique(settings)
-  } else if (nrow(settings) > 0) {
-    out@style <- rbind(out@style, settings)
+  if (!is.matrix(i) || !is.logical(i)) {
+    jval <- sanitize_j(j, x)
+    settings <- process_align_argument(settings, align, jval)
   }
 
-  ## issue #759: reuse object with different styles across RevealJS slides requires new ID every time style_tt is called
-  # This is a very bad idea. Breaks a ton of things. We need unique IDs.
-  # out@id <- get_id("tinytable_")
+  settings <- remove_empty_settings(settings)
 
-  assert_function(finalize, null.ok = TRUE)
+  out <- merge_with_existing_styles(out, settings)
+
   if (is.function(finalize)) {
     out@lazy_finalize <- c(out@lazy_finalize, list(finalize))
   }
@@ -349,6 +466,7 @@ assert_style_tt <- function(
   background,
   fontsize,
   align,
+  alignv,
   colspan,
   rowspan,
   indent,
@@ -359,8 +477,29 @@ assert_style_tt <- function(
   tabularray_outer,
   bootstrap_class = NULL,
   bootstrap_css = NULL,
-  bootstrap_css_rule = NULL
+  bootstrap_css_rule = NULL,
+  output = NULL,
+  finalize = NULL,
+  ...
 ) {
+  # Validate alignv choice
+  assert_choice(alignv, c("t", "m", "b"), null.ok = TRUE)
+
+  # Validate output choice
+  assert_choice(
+    output,
+    c("typst", "latex", "html", "markdown", "gfm"),
+    null.ok = TRUE
+  )
+
+  # Validate finalize function
+  assert_function(finalize, null.ok = TRUE)
+
+  # Check for deprecated width argument
+  if ("width" %in% names(list(...))) {
+    stop("The `width` argument is now in the `tt()` function.", call. = FALSE)
+  }
+
   assert_integerish(colspan, len = 1, lower = 2, null.ok = TRUE)
   assert_integerish(rowspan, len = 1, lower = 2, null.ok = TRUE)
   assert_numeric(indent, len = 1, lower = 0, null.ok = TRUE)
@@ -387,7 +526,7 @@ assert_style_tt <- function(
     }
   }
 
-  ival <- sanitize_i(i, x)
+  ival <- sanitize_i(i, x, calling_function = "style_tt")
   jval <- sanitize_j(j, x)
   inull <- isTRUE(attr(ival, "null"))
   jnull <- isTRUE(attr(jval, "null"))

@@ -1,12 +1,13 @@
 theme_tabular <- function(
-  x,
-  style = get_option("tinytable_theme_tabular_style", "tabular"),
-  ...
-) {
+    x,
+    style = get_option("tinytable_theme_tabular_style", "tabular"),
+    ...) {
   assert_choice(style, c("tabular", "tabularray"))
 
   # do not change the default theme
-  if (identical(x@theme[[1]], "tabular")) x@theme <- list("default")
+  if (identical(x@theme[[1]], "tabular")) {
+    x@theme <- list("default")
+  }
 
   fn <- function(table) {
     tab <- table@table_string
