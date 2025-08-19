@@ -110,7 +110,7 @@ apply_format <- function(
   }
 
   if (inherits(x, "tinytable")) {
-    out <- x@body_data
+    out <- x@data_body
     ori <- x@data
   } else {
     out <- ori <- x
@@ -140,7 +140,9 @@ apply_format <- function(
       classref <- out
     }
 
-    if (is.character(inherit_class)) {
+    if (length(j) == 0) {
+      j_filtered <- integer(0)
+    } else if (is.character(inherit_class)) {
       j_filtered <- j[sapply(j, function(col) {
         inherits(classref[[col]], inherit_class)
       })]
@@ -172,7 +174,7 @@ apply_format <- function(
       # index: we are only formatting the body rows
       # ori & out currently have the same dimensions
       if (inherits(x, "tinytable")) {
-        idx <- x@body_index %in% i
+        idx <- x@index_body %in% i
       } else {
         idx <- seq_len(nrow(out)) %in% i
       }
@@ -206,7 +208,7 @@ apply_format <- function(
     }
 
     if (inherits(x, "tinytable")) {
-      x@body_data <- out
+      x@data_body <- out
     } else {
       x <- out
     }

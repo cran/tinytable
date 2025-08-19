@@ -150,7 +150,7 @@ expect_snapshot_print(
 
 # placement
 tab <- mtcars[1:3, 1:3]
-tab <- tt(tab) |> theme_tt("placement", latex_float = "H")
+tab <- tt(tab) |> theme_latex(placement = "H")
 tab@output <- "latex"
 expect_snapshot_print(tab, label = "latex-placement.tex")
 
@@ -299,14 +299,14 @@ expect_inherits(tab, "character")
 # Issue #307
 tab <- tt(head(iris)) |>
   group_tt(j = list("blah" = 1:2)) |>
-  theme_tt("tabular")
+  theme_latex(environment = "tabular", environment_table = FALSE)
 expect_snapshot_print(tab, label = "latex-issue307.tex")
 
 # Issue #419
 tab <- tt(head(iris)) |>
-  style_tt(
-    tabularray_outer = "label={tbl-species}",
-    tabularray_inner = "rowsep=0pt"
+  theme_latex(
+    outer = "label={tbl-species}",
+    inner = "rowsep=0pt"
   )
 expect_snapshot_print(tab, label = "latex-issue419.tex")
 
@@ -319,10 +319,35 @@ expect_snapshot_print(tab, label = "latex-format_tt_math.tex")
 # Issue #493: theme_multipage does not convert to longtblr
 dat <- data.frame(a = rnorm(100), b = rnorm(100), c = rnorm(100))
 tab <- tt(dat) |>
-  theme_tt("multipage") |>
+  theme_latex(multipage = TRUE, rowhead = 1) |>
   save_tt("latex")
 matches <- lengths(gregexpr("longtblr", tab, fixed = TRUE))
 expect_equal(matches, 2)
+
+
+# Issue #535: environment_table = FALSE without an environment argument
+tab1 <- head(mtcars, 1) |>
+  tt() |>
+  theme_latex(environment_table = FALSE) |>
+  save_tt("latex")
+table_matches <- gregexpr("\\\\begin\\{table\\}", tab1)[[1]]
+expect_equal(ifelse(table_matches[1] == -1, 0, length(table_matches)), 0)
+expect_equal(lengths(gregexpr("\\{tblr", tab1)), 2)
+
+tab2 <- head(mtcars, 1) |>
+  tt() |>
+  theme_latex(environment = "longtblr") |>
+  save_tt("latex")
+table_matches2 <- gregexpr("\\\\begin\\{table\\}", tab2)[[1]]
+expect_equal(ifelse(table_matches2[1] == -1, 0, length(table_matches2)), 0)
+expect_equal(lengths(gregexpr("longtblr", tab2)), 2)
+
+tab3 <- head(mtcars, 1) |>
+  tt() |>
+  theme_latex(environment = "talltblr") |>
+  save_tt("latex")
+expect_equal(lengths(gregexpr("\\{table", tab3)), 2)
+expect_equal(lengths(gregexpr("\\{talltblr", tab3)), 2)
 
 
 

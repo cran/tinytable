@@ -41,8 +41,8 @@ format_vector_math <- function(vec, math = FALSE, ...) {
 }
 
 format_vector_quarto <- function(i, col, x, ...) {
-  out <- x@body_data
-  if (isTRUE(x@output == "html")) {
+  out <- x@data_body
+  if (isTRUE(x@output %in% c("html", "bootstrap", "tabulator"))) {
     fun <- function(z) {
       z@table_string <- sub(
         "data-quarto-disable-processing='true'",
@@ -66,6 +66,6 @@ format_vector_quarto <- function(i, col, x, ...) {
     out[i, col] <- sprintf("\\QuartoMarkdownBase64{%s}", tmp)
   }
 
-  x@body_data <- out
+  x@data_body <- out
   return(x)
 }

@@ -1,25 +1,21 @@
+#' Default theme for TinyTable
+#'
+#' @param x A tinytable object.
+#' @param ... Additional arguments are ignored.
+#' @return A modified `tinytable` object.
+#' @export
 theme_default <- function(x, ...) {
-  fn <- theme_placement_factory(
-    horizontal = get_option("tinytable_theme_default_horizontal", "c"),
-    latex_float = get_option(
-      "tinytable_theme_placement_latex_float",
-      default = NULL
-    )
-  )
-  x <- style_tt(x, finalize = fn)
+  # Placement for LaTeX and Typst
+  x <- theme_latex(x, placement = get_option("tinytable_latex_placement", default = NULL))
+  x <- theme_typst(x, align_figure = get_option("tinytable_typst_align_figure", "c"))
 
-  if (isTRUE(x@output %in% c("html", "typst"))) {
+  x@bootstrap_class <- "table table-borderless"
+
+  fn <- function(x) {
     col <- if (x@output == "typst") "black" else "#d3d8dc"
-    bc <- if (length(x@bootstrap_class) == 0) {
-      "table table-borderless"
-    } else {
-      x@bootstrap_class
-    }
-    # bootstrap class
-    x <- style_tt(x, bootstrap_class = bc)
 
     # top border
-    if (x@output == "html" && length(x@names) == 0) {
+    if (x@output %in% c("html", "bootstrap") && length(x@names) == 0) {
       # For HTML with no column names, apply border to the first data row
       x <- style_tt(
         x,
@@ -42,7 +38,6 @@ theme_default <- function(x, ...) {
     if (length(x@names) > 0) {
       x <- style_tt(
         x,
-        bootstrap_class = bc,
         i = 0,
         line = "b",
         line_color = col,
@@ -52,7 +47,6 @@ theme_default <- function(x, ...) {
     # bottom
     x <- style_tt(
       x,
-      bootstrap_class = bc,
       i = nrow(x),
       line = "b",
       line_color = col,
@@ -60,5 +54,6 @@ theme_default <- function(x, ...) {
     )
   }
 
+  x <- build_prepare(x, fn, output = c("html", "bootstrap", "typst"))
   return(x)
 }

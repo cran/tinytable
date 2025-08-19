@@ -85,10 +85,15 @@ sanitize_i <- function(
   return(out)
 }
 
-sanitize_j <- function(j, x) {
+sanitize_j <- function(j, x, skip_tabulator_types = FALSE) {
   # regex
   if (is.character(j) && length(j) == 1 && !is.null(colnames(x))) {
     out <- grep(j, colnames(x), perl = TRUE)
+    # Check if regex pattern matched any columns
+    if (length(out) == 0) {
+      msg <- sprintf("No columns match the pattern: %s", j)
+      stop(msg, call. = FALSE)
+    }
     # full names
   } else if (is.character(j) && length(j) > 1 && !is.null(colnames(x))) {
     bad <- setdiff(j, colnames(x))
@@ -105,6 +110,19 @@ sanitize_j <- function(j, x) {
       out <- j
     }
   }
+  
+  # Filter out columns that should be skipped for tabulator formatting
+  if (skip_tabulator_types && inherits(x, "tinytable") && x@output == "tabulator") {
+    skip_cols <- c()
+    for (col_idx in out) {
+      col_data <- x@data[[col_idx]]
+      if (inherits(col_data, c("integer", "numeric", "double", "logical", "Date", "POSIXct", "POSIXlt"))) {
+        skip_cols <- c(skip_cols, col_idx)
+      }
+    }
+    out <- setdiff(out, skip_cols)
+  }
+  
   attr(out, "null") <- is.null(j)
   return(out)
 }
@@ -119,7 +137,9 @@ sanitize_output <- function(output) {
       "html",
       "typst",
       "dataframe",
-      "gfm"
+      "gfm",
+      "tabulator",
+      "bootstrap"
     ),
     null.ok = TRUE
   )
@@ -127,7 +147,17 @@ sanitize_output <- function(output) {
   # default output format
   if (is.null(output) || isTRUE(output == "tinytable")) {
     has_viewer <- interactive() && !is.null(getOption("viewer"))
+    if (has_viewer) {
+      output <- "tabulator"
+    } else {
+      out <- "markdown"
+    }
     out <- if (has_viewer) "html" else "markdown"
+  } else if (output == "html") {
+    # When user explicitly asks for "html", check global option for engine
+    tinytable_html_engine <- getOption("tinytable_html_engine", default = "bootstrap")
+    assert_choice(tinytable_html_engine, choice = c("tabulator", "bootstrap"))
+    out <- if (tinytable_html_engine == "tabulator") "tabulator" else "bootstrap"
   } else {
     out <- output
   }
@@ -166,7 +196,11 @@ sanitize_output <- function(output) {
       }
       if (is.null(output)) out <- "latex"
     } else if (isTRUE(knitr::pandoc_to() %in% c("html", "revealjs"))) {
-      if (is.null(output)) out <- "html"
+      if (is.null(output)) {
+        # Check global HTML engine preference for notebooks
+        html_framework <- getOption("tinytable_html_engine", default = "bootstrap")
+        out <- if (html_framework == "tabulator") "tabulator" else "bootstrap"
+      }
     } else if (isTRUE(knitr::pandoc_to() == "typst")) {
       if (is.null(output)) {
         out <- "typst"
@@ -724,4 +758,22 @@ assert_true <- function(
   if (!isTRUE(check_true(x, null.ok = null.ok))) {
     stop(msg, call. = FALSE)
   }
+}
+
+assert_number <- function(
+  x,
+  lower = NULL,
+  upper = NULL,
+  null.ok = FALSE,
+  name = as.character(substitute(x))
+) {
+  # Use assert_numeric with len = 1 to ensure single number
+  assert_numeric(
+    x,
+    len = 1,
+    lower = lower,
+    upper = upper,
+    null.ok = null.ok,
+    name = name
+  )
 }

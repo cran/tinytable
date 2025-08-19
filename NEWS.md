@@ -1,5 +1,37 @@
 # News
 
+## 0.13.0
+
+* New aliases to facilitate completion in IDEs: `tt_style()`, `tt_format()`, `tt_plot()`, `tt_group()`, `tt_save()`. Thanks to @rpruim for the suggestion in Issue #540.
+* Tabularray: use `font=` instead of `cmd=` for italic, bold, and monospace. This allows using more than one style in a single cell. Thanks to @lvjr for the recommendation in Issue #524.
+
+Bugs:
+
+* `theme_latex()`: support removal of `environment_table` when `environment=NULL`. Thanks to @wklimowicz for report #535.
+
+## 0.12.0
+
+Deprecated or replaced features:
+
+* `theme_tt()` function has been deprecated. Use format-specific or style-specific theme functions instead:
+  - Format-specific: `theme_html()`, `theme_latex()`, `theme_typst()`
+  - Style-specific: `theme_grid()`, `theme_revealjs()`, `theme_rotate()`, `theme_striped()`, `theme_void()`
+* `output` argument from `style_tt()`.
+* `tabularray_inner` and `tabularray_outer` arguments from `style_tt()`. Use `theme_latex()` instead.
+* `bootstrap_class`, `bootstrap_css`, and `bootstrap_css_rule` arguments from `style_tt()`. Use `theme_html()` instead.
+* `options(tinytable_latex_float_placement)` has been deprecated. Use `options(tinytable_latex_placement)` instead.
+
+New:
+
+* The Tabulator JS framework can now be used to create interactive HTML tables with filtering, pagination, search, etc. `tt(x) |> theme_tt("tabulator") |> print("tabulator")`
+* `theme_*()` functions are now systematically documented and much more robust, instead of being routed via `theme_tt()`.
+* `group_tt(j = "_")` allows multiple delimiters in column names to easily create multiple level headers. Thanks to @nmercadeb for feature request #518.
+
+Bug fixes:
+
+* `group_tt(i = x)` works when `x` is a factor vector.
+* Typst: fix backslash escaping in `format_tt(escape=TRUE)`
+
 ## 0.11.0
 
 Breaking changes:
@@ -7,7 +39,7 @@ Breaking changes:
 * `theme_spacing()` function has been removed. Use the new `height` argument in `tt()` instead for row height control.
 * Indexing for `format_tt()` is now consistent with `style_tt()` and `plot_tt()`. It refers to rows and columns in the final table, after insertions by `group_tt()`.
 * Argument `indent` is removed form the `group_tt()` function. Use `style_tt(x, "~groupi", indent = 1)` instead.
-* `print("dataframe")` is now consistent with other formats and only prints the result. Use `save_tt("dataframe")` to return an actual data frame.
+* `print("dataframe")` is now consistent with other formats and only prints the result. Use `save_tt("dataframe")` to obtain a data frame.
 
 New features:
 
@@ -57,7 +89,6 @@ Internal changes:
 * Improved grid backend with colspan support for text output.
 * Comprehensive expansion of snapshot tests for matrix insertion functionality.
 * Streamlined class architecture by removing unused legacy code paths.
-* Improvements in Tabularray code efficiency and concision in LaTeX.
 
 ## 0.10.0
 
@@ -173,7 +204,7 @@ Typst:
 
 Bugs:
 
-* `theme_tabular()` is no longer greedy in replacing `cmidrule`. Thanks to @jsr-p for code submission #349.
+* Fixed bug in replacing `cmidrule`. Thanks to @jsr-p for code submission #349.
 
 ## 0.4.0
 

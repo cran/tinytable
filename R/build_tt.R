@@ -8,15 +8,15 @@
 #' @keywords internal
 #' @noRd
 rbind_body_groupi <- function(x) {
-  # Reconstruct the final table by combining formatted body_data and group_data_i parts
+  # Reconstruct the final table by combining formatted data_body and group_data_i parts
   if (nrow(x@group_data_i) == 0) {
-    # No groups - @body_data already contains the final formatted data
+    # No groups - @data_body already contains the final formatted data
     return(x)
   }
 
   # Calculate total final table size
-  total_rows <- nrow(x@body_data) + nrow(x@group_data_i)
-  final_ncol <- ncol(x@body_data)
+  total_rows <- nrow(x@data_body) + nrow(x@group_data_i)
+  final_ncol <- ncol(x@data_body)
 
   # Create final data frame with proper structure
   final_df <- data.frame(matrix(
@@ -24,14 +24,14 @@ rbind_body_groupi <- function(x) {
     nrow = total_rows,
     ncol = final_ncol
   ))
-  colnames(final_df) <- colnames(x@body_data)
+  colnames(final_df) <- colnames(x@data_body)
 
-  # Insert body data at body_index positions
-  if (nrow(x@body_data) > 0 && length(x@body_index) > 0) {
-    for (i in seq_along(x@body_index)) {
-      row_idx <- x@body_index[i]
+  # Insert body data at index_body positions
+  if (nrow(x@data_body) > 0 && length(x@index_body) > 0) {
+    for (i in seq_along(x@index_body)) {
+      row_idx <- x@index_body[i]
       if (!is.na(row_idx) && row_idx > 0 && row_idx <= total_rows) {
-        final_df[row_idx, ] <- x@body_data[i, ]
+        final_df[row_idx, ] <- x@data_body[i, ]
       }
     }
   }
@@ -46,7 +46,10 @@ rbind_body_groupi <- function(x) {
     }
   }
 
-  x@body_data <- final_df
+  x@data_body <- final_df
+
+  # before format_tt() because we need the indices
+  x@nrow <- nrow(x@data) + nrow(x@group_data_i)
 
   return(x)
 }
@@ -55,45 +58,34 @@ rbind_body_groupi <- function(x) {
 build_tt <- function(x, output = NULL) {
   output <- sanitize_output(output)
 
-  x <- switch(
-    output,
+  x <- switch(output,
     html = swap_class(x, "tinytable_bootstrap"),
+    bootstrap = swap_class(x, "tinytable_bootstrap"),
     latex = swap_class(x, "tinytable_tabularray"),
     markdown = swap_class(x, "tinytable_grid"),
     gfm = swap_class(x, "tinytable_grid"),
     typst = swap_class(x, "tinytable_typst"),
     dataframe = swap_class(x, "tinytable_dataframe"),
+    tabulator = swap_class(x, "tinytable_tabulator"),
   )
 
   x@output <- output
 
-  # before format_tt() because we need the indices
-  x@nrow <- nrow(x@data) + nrow(x@group_data_i)
-
-  # apply the style_notes
-  x <- style_notes(x)
-  x <- style_caption(x)
-
-  for (th in x@lazy_theme) {
-    fn <- th[[1]]
-    args <- th[[2]]
-    args[["x"]] <- x
-    x <- do.call(fn, args)
+  # pre-process: theme_*() calls that need formatting conditional on @output
+  for (p in x@lazy_prepare) {
+    o <- attr(p, "output")
+    if (is.null(o) || x@output %in% o) {
+      x <- p(x)
+    }
   }
 
   x <- render_fansi(x)
 
   # Calculate which positions are body vs group
   if (nrow(x@group_data_i) == 0) {
-    x@body_index <- seq_len(nrow(x))
+    x@index_body <- seq_len(nrow(x))
   } else {
-    x@body_index <- setdiff(seq_len(nrow(x)), x@group_index_i)
-  }
-
-  # markdown styles are applied via special format_tt() calls, so they need to
-  # happen before evaluating x@lazy_format
-  if (x@output %in% c("markdown", "gfm", "dataframe")) {
-    x <- style_eval(x)
+    x@index_body <- setdiff(seq_len(nrow(x)), x@group_index_i)
   }
 
   # format each component individually, including groups before inserting them into the body
@@ -102,8 +94,13 @@ build_tt <- function(x, output = NULL) {
     x <- eval(l)
   }
 
+  # apply styling AFTER formatting/escaping to avoid escaping the style brackets
+  x <- style_notes(x)
+  x <- style_caption(x)
+
   # insert group rows into body
   x <- rbind_body_groupi(x)
+
 
   # plots and images
   for (l in x@lazy_plot) {
@@ -116,15 +113,21 @@ build_tt <- function(x, output = NULL) {
 
   # data frame we trim strings, pre-padded for markdown
   if (x@output == "dataframe") {
-    tmp <- x@body_data
+    tmp <- x@data_body
     for (i in seq_along(tmp)) {
       tmp[[i]] <- trimws(tmp[[i]])
     }
-    x@body_data <- tmp
+    x@data_body <- tmp
+  }
+
+  # markdown styles are applied manually after formatting to have consistent decimals
+  # but before drawing the table becuase we need to act on individual cells
+  if (x@output %in% c("markdown", "gfm", "dataframe")) {
+    x <- style_eval(x)
   }
 
   # draw the table
-  x <- tt_eval(x)
+  x <- build_eval(x)
 
   # groups require the table to be drawn first, expecially group_tabularray_col() and friends
   # Handle column groups from @group_data_j
@@ -133,17 +136,6 @@ build_tt <- function(x, output = NULL) {
     ihead <- -1
     # Apply group_eval_j once with all groups
     x <- group_eval_j(x, j = seq_len(ncol(x)), ihead = ihead)
-  }
-
-  # style is separate from content in formats that allow it
-  if (!x@output %in% c("markdown", "gfm", "dataframe")) {
-    for (l in x@lazy_style) {
-      l[["x"]] <- x
-      # output-specific styling
-      if (is.null(l$output) || isTRUE(x@output == l$output)) {
-        x <- eval(l)
-      }
-    }
   }
 
   # markdown styles are applied earlier
@@ -155,6 +147,14 @@ build_tt <- function(x, output = NULL) {
 
   x <- finalize(x)
 
+  # post-process: theme_*() calls that need formatting conditional on @output and table drawn
+  for (p in x@lazy_finalize) {
+    o <- attr(p, "output")
+    if (is.null(o) || x@output %in% o) {
+      x <- p(x)
+    }
+  }
+
   x@table_string <- lines_drop_consecutive_empty(x@table_string)
   if (output == "gfm") {
     assert_dependency("pandoc")
@@ -164,5 +164,19 @@ build_tt <- function(x, output = NULL) {
     )
   }
 
+  return(x)
+}
+
+
+build_prepare <- function(x, fn, output = NULL) {
+  attr(fn, "output") <- output
+  x@lazy_prepare <- c(x@lazy_prepare, list(fn))
+  return(x)
+}
+
+
+build_finalize <- function(x, fn, output = NULL) {
+  attr(fn, "output") <- output
+  x@lazy_finalize <- c(x@lazy_finalize, list(fn))
   return(x)
 }

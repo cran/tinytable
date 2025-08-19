@@ -43,15 +43,15 @@ lines_drop_consecutive_empty <- function(x) {
 }
 
 lines_drop <- function(
-  old,
-  regex,
-  position = "equal",
-  fixed = FALSE,
-  unique = TRUE
-) {
+    old,
+    regex,
+    position = "equal",
+    fixed = FALSE,
+    unique = TRUE,
+    perl = FALSE) {
   assert_choice(position, c("equal", "before", "after", "all"))
   lines <- strsplit(old, "\n")[[1]]
-  idx <- grep(regex, lines, fixed = fixed)
+  idx <- grep(regex, lines, fixed = fixed, perl = perl)
   if (isTRUE(unique) && length(idx) > 1 && position != "all") {
     stop(
       "The `regex` supplied `lines_drop()` did not match a unique line.",
@@ -73,10 +73,10 @@ lines_drop <- function(
   return(out)
 }
 
-lines_drop_between <- function(text, regex_start, regex_end, fixed = FALSE) {
+lines_drop_between <- function(text, regex_start, regex_end, fixed = FALSE, perl = FALSE) {
   lines <- strsplit(text, "\n")[[1]]
-  idx_start <- grep(regex_start, lines, fixed = fixed)
-  idx_end <- grep(regex_end, lines, fixed = fixed)
+  idx_start <- grep(regex_start, lines, fixed = fixed, perl = perl)
+  idx_end <- grep(regex_end, lines, fixed = fixed, perl = perl)
   if (length(idx_start) != 1) {
     stop("The `regex_start` did not match a unique line.", call. = FALSE)
   }
@@ -92,41 +92,37 @@ lines_drop_between <- function(text, regex_start, regex_end, fixed = FALSE) {
   return(out)
 }
 
-lines_insert <- function(old, new, regex, position = "before") {
-  lines <- strsplit(old, "\n")[[1]]
-  idx <- grep(regex, lines)
-  if (length(idx) != 1 || anyNA(idx)) {
-    stop(
-      "The `regex` supplied `lines_insert()` did not match a unique line.",
-      call. = FALSE
-    )
-  }
-  if (position == "before") {
-    top <- lines[1:(idx - 1)]
-    bot <- lines[idx:length(lines)]
-  } else if (position == "after") {
-    top <- lines[1:idx]
-    bot <- lines[(idx + 1):length(lines)]
-  }
-  lines <- c(top, new, bot)
-  out <- paste(lines, collapse = "\n")
-  return(out)
+lines_insert <- function(old, new, regex, position = c("before", "after"),
+                         fixed = FALSE, perl = FALSE, occurrence = 1L,
+                         require_unique = FALSE) {
+  position <- match.arg(position)
+  lines <- strsplit(old, "\n", fixed = TRUE)[[1]]
+  hits <- grep(regex, lines, fixed = fixed, perl = perl)
+
+  if (length(hits) == 0L || anyNA(hits)) stop("`regex` did not match.", call. = FALSE)
+  if (require_unique && length(hits) != 1L) stop("`regex` did not match a unique line.", call. = FALSE)
+  if (occurrence > length(hits)) stop("`occurrence` out of range.", call. = FALSE)
+
+  idx <- hits[occurrence]
+  after <- if (position == "before") idx - 1L else idx
+  out <- append(lines, values = new, after = after)
+  paste(out, collapse = "\n")
 }
 
 
 # strip ANSI from `tibble`/`pillar`; keep for markdown
 render_fansi <- function(x) {
-  tab <- x@body_data
+  tab <- x@data_body
   if (isTRUE(check_dependency("fansi"))) {
     for (col in seq_along(tab)) {
-      if (isTRUE(x@output == "html")) {
+      if (isTRUE(x@output %in% c("html", "bootstrap", "tabulator"))) {
         tab[[col]] <- as.character(fansi::to_html(tab[[col]], warn = FALSE))
       } else if (isTRUE(!x@output %in% c("markdown", "dataframe"))) {
         tab[[col]] <- as.character(fansi::strip_ctl(tab[[col]]))
       }
     }
   }
-  x@body_data <- tab
+  x@data_body <- tab
   return(x)
 }
 
@@ -135,4 +131,29 @@ rbind_nocol <- function(...) {
   dflist <- list(...)
   out <- lapply(list(...), function(k) stats::setNames(k, seq_len(ncol(k))))
   do.call(rbind, out)
+}
+
+
+...get <- function(x, ifnotfound = NULL) {
+  eval(
+    quote(
+      if (!anyNA(.m1 <- match(.x, ...names())) && !is.null(.m2 <- ...elt(.m1))) {
+        .m2
+      } else {
+        .ifnotfound
+      }),
+    pairlist(.x = x[1L], .ifnotfound = ifnotfound),
+    parent.frame(1L)
+  )
+}
+
+
+#' Helper function to get value with fallback
+#' @param value Primary value
+#' @param fallback Fallback value
+#' @return Value or fallback
+#' @keywords internal
+#' @noRd
+`%||%` <- function(value, fallback) {
+  if (is.null(value)) fallback else value
 }

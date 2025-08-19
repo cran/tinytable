@@ -1,11 +1,13 @@
 footnote_markers <- function(x) {
   notes <- x@notes
-  tab <- x@body_data
+  tab <- x@data_body
 
   # Define superscript syntax for each output format
   superscript_syntax <- list(
     latex = "\\textsuperscript{%s}",
     html = "<sup>%s</sup>",
+    bootstrap = "<sup>%s</sup>",
+    tabulator = "<sup>%s</sup>",
     typst = "#super[%s]",
     markdown = "^%s^"
   )
@@ -41,6 +43,6 @@ footnote_markers <- function(x) {
     }
   }
 
-  x@body_data <- tab
+  x@data_body <- tab
   return(x)
 }

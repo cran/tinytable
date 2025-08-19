@@ -203,6 +203,11 @@ format_tt_lazy <- function(
     x_is_tibble <- FALSE
   }
 
+  # important for tabulator
+  if (!is.null(bool) && inherits(x, "tinytable")) {
+    x@tabulator_format_bool <- TRUE
+  }
+
   # Check if i contains component names (do this before processing tinytable objects)
   if (identical(i, "groupi")) {
     components <- "cells"
@@ -233,7 +238,7 @@ format_tt_lazy <- function(
   } else if (inherits(x, "tinytable")) {
     atomic_vector <- FALSE
     # if no other format_tt() call has been applied, we ctan have numeric values
-    out <- x@body_data
+    out <- x@data_body
     ori <- x@data
   } else {
     stop(
@@ -247,7 +252,7 @@ format_tt_lazy <- function(
   # NULL for all formats since this is applied before creating the table.
   # nrow(out) because nrow(x) sometimes includes rows that will be added **in the lazy future** by group_tt()
   i <- sanitize_i(i, x, lazy = FALSE, calling_function = "format_tt")
-  j <- sanitize_j(j, x)
+  j <- sanitize_j(j, x, skip_tabulator_types = TRUE)
 
   x <- apply_format(
     x = x,
