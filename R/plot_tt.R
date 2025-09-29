@@ -9,22 +9,69 @@
 #' @param j Integer vector, the column indices where images are to be inserted. If `NULL`,
 #'    images will be inserted in all columns.
 #' @param height Numeric, the height of the images in the table in em units.
-#' @param asp Numeric, aspect ratio of the plots (height / width).
+#' @param height_plot Numeric, the height of generated plot images in pixels (default: 400).
+#' @param width_plot Numeric, the width of generated plot images in pixels (default: 1200).
 #' @param color string Name of color to use for inline plots (passed to the `col` argument base `graphics` plots in `R`).
 #' @param xlim Numeric vector of length 2.
 #' @param fun  String or function to generate inline plots.
-#' - String: "histogram", "density", "bar", "line"
-#' - Functions that return `ggplot2` objects.
-#' - Functions that return another function which generates a base `R` plot, ex: `function(x) {function() hist(x)}`
+#' - Built-in plot types (strings):
+#'   - `"histogram"`: Creates histograms from numeric vectors. Accepts `color` argument.
+#'   - `"density"`: Creates density plots from numeric vectors. Accepts `color` argument.
+#'   - `"bar"`: Creates horizontal bar charts from single numeric values. Accepts `color` and `xlim` arguments.
+#'   - `"barpct"`: Creates horizontal percentage bar charts from single numeric values between 0 and 1. Accepts `color` and `background` arguments.
+#'   - `"line"`: Creates line plots from data frames with `x` and `y` columns. Accepts `color` and `xlim` arguments.
+#' - Custom functions:
+#'   - Functions that return `ggplot2` objects.
+#'   - Functions that return another function which generates a base `R` plot, ex: `function(x) {function() hist(x)}`
+#'   - Note: When using custom ggplot2 functions that return plots with text elements, the text size will normally need to be adjusted because the plot is inserted as a very small image in the table. Text sizes of 1 or smaller often work well (e.g., `theme(text = element_text(size = 1))`).
 #' - See the tutorial on the `tinytable` website for more information.
 #' @param data a list of data frames or vectors to be used by the plotting functions in `fun`.
 #' @param images Character vector, the paths to the images to be inserted. Paths are relative to the main table file or Quarto (Rmarkdown) document.
+#' @param sprintf Character string, a sprintf format string to format the generated cell content. Default is "%s" which displays the content as-is. Use this to wrap images or plots in custom markup.
 #' @param assets Path to the directory where generated assets are stored. This path is relative to the location where a table is saved.
 #' @param ... Extra arguments are passed to the function in `fun`. Important: Custom plotting functions must always have `...` as an argument.
 #'
 #' @return A modified tinytable object with images or plots inserted.
 #'
 #' @details The `plot_tt()` can insert images and inline plots into tables.
+#'
+#' @examples
+#' \dontrun{
+#' # Built-in plot types
+#' plot_data <- list(mtcars$mpg, mtcars$hp, mtcars$qsec)
+#'
+#' dat <- data.frame(
+#'   Variables = c("mpg", "hp", "qsec"),
+#'   Histogram = "",
+#'   Density = "",
+#'   Bar = "",
+#'   BarPct = "",
+#'   Line = ""
+#' )
+#'
+#' # Random data for sparklines
+#' lines <- lapply(1:3, \(x) data.frame(x = 1:10, y = rnorm(10)))
+#'
+#' # Percentage data (values between 0 and 1)
+#' pct_data <- list(0.65, 0.82, 0.41)
+#'
+#' tt(dat) |>
+#'   plot_tt(j = 2, fun = "histogram", data = plot_data) |>
+#'   plot_tt(j = 3, fun = "density", data = plot_data, color = "darkgreen") |>
+#'   plot_tt(j = 4, fun = "bar", data = list(2, 3, 6), color = "orange") |>
+#'   plot_tt(j = 5, fun = "barpct", data = pct_data, color = "steelblue") |>
+#'   plot_tt(j = 6, fun = "line", data = lines, color = "blue") |>
+#'   style_tt(j = 2:6, align = "c")
+#'
+#' # Custom function example (must have ... argument)
+#' custom_hist <- function(d, ...) {
+#'   function() hist(d, axes = FALSE, ann = FALSE, col = "lightblue")
+#' }
+#'
+#' tt(data.frame(Variables = "mpg", Histogram = "")) |>
+#'   plot_tt(j = 2, fun = custom_hist, data = list(mtcars$mpg))
+#' }
+#'
 #' @export
 plot_tt <- function(
     x,
@@ -35,25 +82,34 @@ plot_tt <- function(
     color = "black",
     xlim = NULL,
     height = 1,
-    asp = 1 / 3,
+    height_plot = 400,
+    width_plot = 1200,
     images = NULL,
+    sprintf = "%s",
     assets = "tinytable_assets",
     ...) {
+  # non-standard evaluation before anything else
+  tmp <- nse_i_j(x, i_expr = substitute(i), j_expr = substitute(j), pf = parent.frame())
+  list2env(tmp, environment())
+
   jval <- sanitize_j(j, x)
-  assert_integerish(i, null.ok = TRUE)
+  ival <- sanitize_i(i, x, calling_function = "plot_tt")
   assert_numeric(height, len = 1, lower = 0)
-  assert_numeric(asp, len = 1, lower = 0, upper = 1)
   assert_class(x, "tinytable")
 
-  ival <- if (is.null(i)) seq_len(nrow(x)) else i
-
-  len <- length(ival) * length(jval)
+  # Calculate actual length considering NULL i values
+  ival_length <- if (isTRUE(attr(ival, "null"))) {
+    length(attr(ival, "body"))
+  } else {
+    length(ival)
+  }
+  len <- ival_length * length(jval)
 
   assert_list(data, len = len, null.ok = TRUE)
   assert_character(images, len = len, null.ok = TRUE)
 
   if (!is.null(images) && length(images) != len) {
-    msg <- sprintf(
+    msg <- base::sprintf(
       "`images` must match the dimensions of `i` and `j`: length %s.",
       len
     )
@@ -69,7 +125,7 @@ plot_tt <- function(
   }
 
   if (is.character(fun)) {
-    assert_choice(fun, c("histogram", "density", "bar", "line"))
+    assert_choice(fun, c("histogram", "density", "bar", "barpct", "line"))
   } else {
     assert_function(fun, null.ok = TRUE)
   }
@@ -89,6 +145,17 @@ plot_tt <- function(
       xlim <- c(0, max(unlist(data)))
     }
     fun <- rep(list(tiny_bar), length(data))
+  } else if (identical(fun, "barpct")) {
+    for (idx in seq_along(data)) {
+      assert_numeric(data[[idx]], len = 1, name = "data[[1]]")
+      if (!all(data[[idx]] >= 0 & data[[idx]] <= 1, na.rm = TRUE)) {
+        stop("Data for 'barpct' must be between 0 and 1 (percentages).", call. = FALSE)
+      }
+    }
+    if (is.null(xlim)) {
+      xlim <- c(0, 1)
+    }
+    fun <- rep(list(tiny_barpct), length(data))
   } else {
     fun <- rep(list(fun), length(data))
   }
@@ -99,13 +166,15 @@ plot_tt <- function(
     x = x,
     i = ival,
     j = jval,
-    asp = asp,
     data = data,
     fun = fun,
     color = color,
     xlim = xlim,
     height = height,
+    height_plot = height_plot,
+    width_plot = width_plot,
     images = images,
+    sprintf = sprintf,
     assets = assets
   )
   cal <- c(cal, list(...))
@@ -121,35 +190,62 @@ plot_tt_lazy <- function(
     i = NULL,
     j = NULL,
     height = 1,
-    asp = 1 / 3,
+    height_plot = 400,
+    width_plot = 1200,
     fun = NULL,
     color = NULL,
     data = NULL,
     xlim = NULL,
     images = NULL,
+    sprintf = "%s",
     assets = "tinytable_assets",
     ...) {
   out <- x@data_body
+
+
+  is_html <- isTRUE(x@output %in% c("html", "bootstrap", "tabulator"))
+  is_quarto <- isTRUE(check_dependency("knitr")) && !is.null(knitr::pandoc_to())
+
+  # paths are tricky in Quarto HTML (website vs single file)
+  is_portable <- is_html && (isTRUE(x@html_portable) || is_quarto)
+  if (is_portable) assert_dependency("base64enc")
+
+  # Normalize user-provided image paths to full paths
+  if (!is.null(images)) {
+    # quarto requires relative links or url
+    # print("html") must be run from a tempdir on linux, so we need absolute paths
+    if (!is_quarto) {
+      images <- normalizePath(images, mustWork = FALSE)
+    }
+  }
 
   if (!is.null(data)) {
     assert_dependency("ggplot2")
     images <- NULL
 
-    if (isTRUE(x@output %in% c("html", "bootstrap")) && isTRUE(x@portable)) {
-      path_full <- tempdir()
-      assets <- tempdir()
+    # path_assets directory stores dynamically generated plots
+    if (is_portable) {
+      path_assets <- tempdir()
+      # quarto requires relative paths from the project folder
+    } else if (is_quarto) {
+      path_assets <- assets
     } else {
-      path_full <- file.path(x@output_dir, assets)
+      path_assets <- file.path(x@output_dir, assets)
+    }
+    if (!dir.exists(path_assets)) {
+      dir.create(path_assets)
     }
 
-    if (!dir.exists(path_full)) {
-      dir.create(path_full)
-    }
     for (idx in seq_along(data)) {
       fn <- paste0(get_id(), ".png")
-      fn_full <- file.path(path_full, fn)
-      fn <- file.path(assets, fn)
-      images[idx] <- fn
+      fn_full <- file.path(path_assets, fn)
+      if (is_portable) {
+        # For portable HTML, store the full path for base64 encoding
+        images[idx] <- fn_full
+      } else {
+        # For regular HTML/save_tt/print, store the full path for proper file access
+        images[idx] <- fn_full
+      }
 
       plot_fun <- fun[[idx]]
       if (!"..." %in% names(formals(plot_fun))) {
@@ -167,15 +263,15 @@ plot_tt_lazy <- function(
           ggplot2::ggsave(
             p,
             filename = fn_full,
-            width = 1,
-            height = asp,
-            units = "in"
+            width = width_plot,
+            height = height_plot,
+            units = "px"
           )
         )
 
         # base R
       } else if (is.function(p)) {
-        grDevices::png(fn_full, width = 1000, height = 1000 * asp)
+        grDevices::png(fn_full, width = width_plot, height = height_plot)
         op <- graphics::par()
         graphics::par(mar = c(0, 0, 0, 0))
         p()
@@ -192,36 +288,91 @@ plot_tt_lazy <- function(
 
   if (isTRUE(x@output == "latex")) {
     cell <- "\\includegraphics[height=%sem]{%s}"
-    cell <- sprintf(cell, height, images)
-  } else if (isTRUE(x@output %in% c("html", "bootstrap", "tabulator")) && isTRUE(x@portable)) {
-    assert_dependency("base64enc")
-
+    cell <- base::sprintf(cell, height, images)
+  } else if (is_portable) {
     http <- grepl("^http", trimws(images))
     images[!http] <- encode(images[!http])
-    cell <- sprintf('<img src="%s" style="height: %sem;">', images, height)
-  } else if (isTRUE(x@output %in% c("html", "bootstrap", "tabulator"))) {
-    cell <- ifelse(
-      grepl("^http", trimws(images)),
-      '<img src="%s" style="height: %sem;">',
-      '<img src="./%s" style="height: %sem;">'
-    )
-    cell <- sprintf(cell, images, height)
+    cell <- base::sprintf('<img src="%s" style="height: %sem;">', images, height)
+  } else if (is_html) {
+    # Convert relative paths to absolute paths for save_tt/print
+    http <- grepl("^http", trimws(images))
+    for (img_idx in seq_along(images)) {
+      if (!http[img_idx]) {
+        # Convert relative paths to absolute paths
+        if (!grepl("^/", trimws(images[img_idx])) && !grepl("^[A-Za-z]:", trimws(images[img_idx]))) {
+          images[img_idx] <- file.path(x@output_dir, images[img_idx])
+        }
+      }
+    }
+    cell <- base::sprintf('<img src="%s" style="height: %sem;">', images, height)
   } else if (isTRUE(x@output == "markdown")) {
     cell <- "![](%s){ height=%s }"
-    cell <- sprintf(cell, images, height * 16)
+    cell <- base::sprintf(cell, images, height * 16)
   } else if (isTRUE(x@output == "typst")) {
     cell <- '#image("%s", height: %sem)'
-    cell <- sprintf(cell, images, height)
+    cell <- base::sprintf(cell, images, height)
   } else if (isTRUE(x@output == "dataframe")) {
     cell <- "%s"
-    cell <- sprintf(cell, images)
+    cell <- base::sprintf(cell, images)
   } else {
     stop("here be dragons")
   }
 
-  out[i, j] <- cell
+  cell <- base::sprintf(sprintf, cell)
+
+  # Handle column header insertions (i=0)
+  if (0 %in% i) {
+    # Insert into header (column names)
+    if (is.null(x@names) || length(x@names) == 0) {
+      stop("Cannot insert images into header: table has no column names.", call. = FALSE)
+    }
+    header_indices <- which(i == 0)
+    body_indices <- which(i > 0)
+
+    # Insert into column headers
+    cell_idx <- 1
+    for (idx in header_indices) {
+      for (j_val in j) {
+        if (j_val <= length(x@names)) {
+          x@names[j_val] <- cell[cell_idx]
+        }
+        cell_idx <- cell_idx + 1
+      }
+    }
+
+    # Insert into body rows
+    if (length(body_indices) > 0) {
+      body_i <- i[body_indices]
+      for (i_val in body_i) {
+        for (j_val in j) {plot_tt
+          out[i_val, j_val] <- cell[cell_idx]
+          cell_idx <- cell_idx + 1
+        }
+      }
+    }
+  } else {
+    # Original behavior: insert into data body
+    # Handle the case where i is NA (from sanitize_i when i was NULL)
+    if (all(is.na(i)) && isTRUE(attr(i, "null"))) {
+      # Use the body rows from the attributes
+      i_body <- attr(i, "body")
+      out[i_body, j] <- cell
+    } else {
+      out[i, j] <- cell
+    }
+  }
 
   x@data_body <- out
+
+  # Mark columns with HTML content for HTML formatter in Tabulator
+  if (isTRUE(x@html_engine == "tabulator")) {
+    for (col_idx in j) {
+      col_name <- x@names[col_idx]
+      if (!is.null(col_name) && !(col_name %in% names(x@tabulator_column_formatters))) {
+        x@tabulator_column_formatters[[col_name]] <- list(formatter = "html")
+      }
+    }
+  }
 
   return(x)
 }
@@ -235,6 +386,34 @@ tiny_density <- function(d, color = "black", ...) {
     d <- stats::density(stats::na.omit(d))
     graphics::plot(d, axes = FALSE, ann = FALSE, col = color)
     graphics::polygon(d, col = color)
+  }
+}
+
+tiny_barpct <- function(
+    d,
+    color = "black",
+    background = "lightgrey",
+    xlim = c(0, 1),
+    ...) {
+  function() {
+    stopifnot(is.numeric(d), all(d >= 0 & d <= 1, na.rm = TRUE))
+
+    color <- standardize_colors(color)
+    bg_col <- standardize_colors(background)
+
+    comp <- 1 - d
+    mat <- rbind(d, comp)
+
+    graphics::barplot(
+      mat,
+      horiz  = TRUE,
+      col    = c(color, bg_col),
+      xlim   = xlim,
+      space  = 0,
+      beside = FALSE,
+      axes   = FALSE,
+      ...
+    )
   }
 }
 
@@ -267,5 +446,5 @@ encode <- function(images) {
   }
 
   encoded <- sapply(images, base64enc::base64encode)
-  sprintf("data:image/%s;base64, %s", ext, encoded)
+  base::sprintf("data:image/%s;base64, %s", ext, encoded)
 }

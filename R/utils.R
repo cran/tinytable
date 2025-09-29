@@ -110,23 +110,6 @@ lines_insert <- function(old, new, regex, position = c("before", "after"),
 }
 
 
-# strip ANSI from `tibble`/`pillar`; keep for markdown
-render_fansi <- function(x) {
-  tab <- x@data_body
-  if (isTRUE(check_dependency("fansi"))) {
-    for (col in seq_along(tab)) {
-      if (isTRUE(x@output %in% c("html", "bootstrap", "tabulator"))) {
-        tab[[col]] <- as.character(fansi::to_html(tab[[col]], warn = FALSE))
-      } else if (isTRUE(!x@output %in% c("markdown", "dataframe"))) {
-        tab[[col]] <- as.character(fansi::strip_ctl(tab[[col]]))
-      }
-    }
-  }
-  x@data_body <- tab
-  return(x)
-}
-
-
 rbind_nocol <- function(...) {
   dflist <- list(...)
   out <- lapply(list(...), function(k) stats::setNames(k, seq_len(ncol(k))))
@@ -156,4 +139,26 @@ rbind_nocol <- function(...) {
 #' @noRd
 `%||%` <- function(value, fallback) {
   if (is.null(value)) fallback else value
+}
+
+
+percent_sum_100 <- function(x, digits = 0) {
+  stopifnot(is.numeric(x), all(is.finite(x)), all(x >= 0))
+  s <- sum(x)
+  if (s <= 0) stop("sum(x) must be > 0")
+  p <- x / s
+
+  units <- 100L * 10^digits
+  scaled <- p * units
+  base <- floor(scaled)
+  rem <- scaled - base
+
+  leftover <- units - sum(base) # how many 1/10^digits to distribute
+  if (leftover != 0) {
+    ix <- order(rem, decreasing = TRUE, method = "radix")
+    base[ix[seq_len(leftover)]] <- base[ix[seq_len(leftover)]] + 1L
+  }
+
+  out <- base / 10^digits
+  return(out)
 }

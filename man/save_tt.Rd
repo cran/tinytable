@@ -22,9 +22,9 @@ tt_save(
 
 \item{output}{String or file path.
 \itemize{
-\item If \code{output} is "markdown", "latex", "html", "html_portable", "typst", or "tabulator", the table is returned in a string as an \code{R} object.
+\item If \code{output} is "markdown", "latex", "html", "typst", or "tabulator", the table is returned in a string as an \code{R} object.
 \item If \code{output} is a valid file path, the table is saved to file. The supported extensions are: .docx, .html, .png, .pdf, .tex, .typ, and .md (with aliases .txt, .Rmd and .qmd).
-\item If \code{output} is "html_portable" or the global option \code{tinytable_html_portable} is \code{TRUE},
+\item If the global option \code{tinytable_html_portable} is \code{TRUE},
 the images are included in the HTML as base64 encoded string instead of link to a local file.
 }}
 
@@ -59,7 +59,6 @@ Note: Your document will fail to compile to PDF in Quarto if you enable caching 
 \\usepackage\{graphicx\}
 \\usepackage\{rotating\}
 \\usepackage[normalem]\{ulem\}
-\\UseTblrLibrary\{booktabs\}
 \\UseTblrLibrary\{siunitx\}
 \newcommand{\tinytableTabularrayUnderline}[1]\{\\underline\{#1\}\}
 \newcommand{\tinytableTabularrayStrikeout}[1]\{\\sout\{#1\}\}
@@ -85,29 +84,11 @@ Nearly all of the package's functions retrieve their default values from global 
 }\if{html}{\out{</div>}}
 
 In addition, some more specific options are available to control the behavior of the package in specific contexts.
-\subsection{HTML}{
 \itemize{
 \item \code{tinytable_html_mathjax}: Insert MathJax scripts (warning: may conflict if MathJax is loaded elsewhere)
-\item \code{tinytable_html_portable}: Insert base64 encoded images directly in HTML for \code{plot_tt()}
-\item \code{tinytable_html_engine}: Default HTML engine (default: "bootstrap"). Set to "tabulator" to use interactive tables by default in HTML documents instead of static Bootstrap tables.
+\item \code{tinytable_pdf_clean}: Delete temporary and log files for pdf output in \code{save_tt()}
+\item \code{tinytable_color_name_normalization}: Enable/disable automatic color name processing (default: TRUE). When enabled, R color names recognized by \code{col2rgb()} are converted to hex format for consistent rendering across HTML, LaTeX, and Typst formats. If R color conversion fails, LaTeX color names are used as fallback. Colors explicitly supplied as hex values with "#" prefix are passed through unchanged. Set to FALSE to disable processing and pass color names unchanged.
 }
-}
-
-\subsection{PDF}{
-\itemize{
-\item \code{tinytable_pdf_clean}: Delete temporary and log files
-\item \code{tinytable_pdf_engine}: Choose between "xelatex", "pdflatex", "lualatex"
-}
-}
-
-\subsection{Color processing}{
-\itemize{
-\item \code{tinytable_color_name_normalization}: Enable/disable automatic color name processing (default: TRUE).
-}
-
-When enabled, R color names recognized by \code{col2rgb()} are converted to hex format for consistent rendering across HTML, LaTeX, and Typst formats. If R color conversion fails, LaTeX color names are used as fallback. Colors explicitly supplied as hex values with "#" prefix are passed through unchanged. Set to FALSE to disable processing and pass color names unchanged.
-}
-
 \subsection{Quarto}{
 
 The \code{format_tt(quarto=TRUE)} argument enables Quarto data processing with some limitations:
@@ -119,8 +100,6 @@ The \code{format_tt(quarto=TRUE)} argument enables Quarto data processing with s
 Options:
 \itemize{
 \item \code{tinytable_quarto_disable_processing}: Disable Quarto cell processing
-\item \code{tinytable_print_rstudio_notebook}: Display tables "inline" or in "viewer" for RStudio notebooks
-\item \code{tinytable_quarto_figure}: Control Typst figure environment in Quarto
 }
 
 Example of Quarto-specific code in cells:

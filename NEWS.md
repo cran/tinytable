@@ -1,5 +1,69 @@
 # News
 
+## 0.14.0
+
+Breaking changes:
+
+* `"gfm"` is no longer a valid `output` format. Use `output = "markdown"` with `theme_markdown(style = "gfm")` instead.
+* `theme_empty()` drops every change made to this point, so the order of operations matter.
+* `"html_portable"` is no longer a valid `output` format in `save_tt()` or `print()`. Use `theme_html(portable = TRUE)` instead.
+* `plot_tt()` deprecates the `asp` argument. Use `width_plot` and `height_plot` instead.
+* `theme_void()` becomes `theme_empty()` to avoid conflict with `ggplot2::theme_void()`.
+* The experimental function `strip_tt()` was added very recently but is now removed. Use `theme_empty()` instead.
+
+Deprecated global options:
+
+* `tinytable_html_engine` 
+  - Alternative: `theme_html(tab, engine = "bootstrap")`
+* `tinytable_html_portable`
+  - Alternative: `theme_html(tab, portable = TRUE)`
+* `tinytable_latex_preamble` 
+  - Alternative: `theme_latex(tab, preamble = TRUE)`
+* `tinytable_pdf_engine` 
+  - Alternative: `theme_latex(tab, engine = "pdflatex")`
+* `tinytable_quarto_figure`
+  - No alternative.
+
+New functions:
+
+* `format_vector()` is similar to `format_tt()` but accepts and returns vectors.
+* `style_vector()` is similar to `style_tt()` but accepts and returns vectors.
+* `plot_vector()` is similar to `plot_tt()` but it returns a character vector of links to plots or images, with appropriate markup and styling, like `href` for HTML output or `\includegraphics{}` for LaTeX.
+
+New arguments:
+
+* `format_tt(output = )` to apply formatting conditionally based on output format.
+* `style_tt(smallcap = TRUE)` to style text in small capitals. In HTML, LaTeX, and Typst, it uses proper small caps formatting. In Markdown, it converts text to uppercase.
+* `tt(x, colnames = "label")` renames column names using the `attr(df$x, "label")` attribute, when available, falling back to column names otherwise.
+* `format_tt(linebreak = "<br>")` can substitute a user-specified string to an appropriate character sequence to generate line breaks in the `output` of the `tinytable` (ex: `\\` for LaTeX, `<br>` for HTML, etc.)
+* `theme_markdown(ansi=TRUE)` enables support for `style_tt()` colors, backgrounds, and text styles in Markdown output. 
+* `theme_markdown(vline=FALSE, hline=FALSE)` suppresses lines.
+* `plot_tt(height_plot, width_plot)` control the size (in pixels) of the plotting device canvas. This allows users to control the resolution of the original plot, as well as the relative size of elements.
+* `plot_tt(fun = "barpct", color = "red", background = "blue")` draws percentage bars with two colors for p and 1-p.
+* `plot_tt(sprintf = "...")` allows custom formatting of generated cell content with sprintf patterns.
+
+New miscellaneous features:
+
+* New Gallery vignette with advanced examples: https://vincentarelbundock.github.io/tinytable/vignettes/gallery.html
+* Non-standard evaluation is supported for `i` and `j` arguments in `style_tt()`, `format_tt()`, and `plot_tt()`.
+* `tt()` is now a generic function, allowing special table-drawing methods for specific classes of objects. `tinytable` provides methods for `data.frame`, `data.table`, and `tbl_df`. See the "Custom" vignette for examples.
+* `subset(x, select = c(x, y))` can now be used to select columns.
+* A global option can be used to choose the temporary directofy where HTML files are saved for preview: `options(tinytable_tempdir = "/home/username/tempdir")`
+* Tabulator interactive tables support images with `plot_tt()`.
+* `plot_tt()` can add images to replace column names. Issue #566.
+* Improved path handling in `plot_tt()`
+
+Bugs:
+
+* `tabulator` output works with hyphens in columns names
+* Selective formatting with `format_tt(i = "colnames")` is no longer applied twice. Issue #551.
+* `color` ignored in matrix indexing.
+* Fixed bug in non-standard evaluation with the `i` condition matches nothing. Thanks to @RJDan for report #564.
+* `group_tt(j = )` respects column widths in bootstrap HTML output.
+* Better path handling in `plot_tt()`
+* `save_tt("typst")` no longer aborts if there is `typst` directory. Thanks to @sTeADone for report #580.
+
+
 ## 0.13.0
 
 * New aliases to facilitate completion in IDEs: `tt_style()`, `tt_format()`, `tt_plot()`, `tt_group()`, `tt_save()`. Thanks to @rpruim for the suggestion in Issue #540.

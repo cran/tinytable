@@ -13,7 +13,8 @@
   data_body = data.frame(),
   placement = NULL,
   width = NULL,
-  height = NULL
+  height = NULL,
+  colnames = TRUE
 )
 }
 \arguments{
@@ -29,7 +30,7 @@
 
 \item{theme}{Function or string.
 \itemize{
-\item String: grid, revealjs, rotate, striped, void
+\item String: grid, revealjs, rotate, striped, empty
 \item Function: Applied to the \code{tinytable} object.
 }}
 
@@ -40,6 +41,8 @@
 }}
 
 \item{height}{Row height in em units. Single numeric value greater than zero that determines the row height spacing.}
+
+\item{colnames}{\code{TRUE}, \code{FALSE}, or "label". If "label", use the \code{attr(x$col,"label")} attribute if available and fall back on column names otherwise.}
 }
 \description{
 Method for a tinytable S4 object

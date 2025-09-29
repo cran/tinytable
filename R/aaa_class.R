@@ -1,15 +1,6 @@
 swap_class <- function(x, new_class) {
-  out <- methods::new(new_class)
-  for (s in methods::slotNames(x)) {
-    # modelsummary issue #727
-    tmp <- methods::slot(x, s)
-    if (inherits(tmp, "data.table")) {
-      assert_dependency("data.table")
-      data.table::setDT(tmp)
-    }
-    methods::slot(out, s) <- tmp
-  }
-  return(out)
+  class(x) <- new_class
+  return(x)
 }
 
 setClassUnion("NULLorCharacter", c("NULL", "character"))
@@ -23,13 +14,17 @@ setClassUnion("NULLorList", c("NULL", "list"))
 setClass(
   Class = "tinytable",
   slots = representation(
+    ansi = "logical",
     body = "character",
-    bootstrap_class = "character",
-    bootstrap_css_rule = "character",
+    html_class = "character",
+    html_css_rule = "NULLorCharacter",
     caption = "NULLorCharacter",
     css = "data.frame",
     data = "data.frame",
     data_body = "data.frame",
+    grid_hline = "logical",
+    grid_hline_header = "logical",
+    grid_vline = "logical",
     group_data_i = "data.frame",
     group_data_j = "data.frame",
     group_index_i = "numeric",
@@ -40,6 +35,9 @@ setClass(
     lazy_format = "list",
     lazy_plot = "list",
     lazy_prepare = "list",
+    lazy_style = "list",
+    lazy_subset = "ANY",
+    markdown_style = "character",
     names = "NULLorCharacter",
     ncol = "numeric",
     nhead = "numeric",
@@ -48,7 +46,10 @@ setClass(
     output = "character",
     output_dir = "character",
     placement = "NULLorCharacter",
-    portable = "logical",
+    html_portable = "logical",
+    html_engine = "character",
+    latex_preamble = "logical",
+    latex_engine = "character",
     style = "data.frame",
     style_caption = "list",
     style_notes = "list",
@@ -76,16 +77,16 @@ setClass(
 setMethod(
   "initialize",
   "tinytable",
-  function(
-      .Object,
-      data = data.frame(),
-      caption = NULL,
-      notes = NULL,
-      theme = list("default"),
-      data_body = data.frame(),
-      placement = NULL,
-      width = NULL,
-      height = NULL) {
+  function(.Object,
+           data = data.frame(),
+           caption = NULL,
+           notes = NULL,
+           theme = list("default"),
+           data_body = data.frame(),
+           placement = NULL,
+           width = NULL,
+           height = NULL,
+           colnames = TRUE) {
     # explicit
     .Object@data <- data
     .Object@data_body <- data_body
@@ -95,38 +96,69 @@ setMethod(
     .Object@width <- width
     .Object@notes <- notes
     .Object@height <- height
+    # Generate unique ID first
+    .Object@id <- get_id("tinytable_")
+
+    # Default to NULL - framework CSS will be loaded externally
+    .Object@html_css_rule <- NULL
 
     # dynamic
     .Object@nrow <- nrow(.Object@data)
     .Object@ncol <- ncol(.Object@data)
-    .Object@nhead <- if (is.null(colnames(data))) 0 else 1
-    .Object@names <- if (is.null(colnames(data))) {
-      character()
-    } else {
-      colnames(data)
+    .Object@nhead <- if (is.null(colnames(data)) || isFALSE(colnames)) 0 else 1
+
+    # colnames
+    if (isTRUE(colnames)) {
+      .Object@names <- colnames(data)
+    } else if (isFALSE(colnames) || is.null(colnames(data))) {
+      .Object@names <- character()
+    } else if (identical(colnames, "label")) {
+      cols <- character()
+      for (cn in colnames(data)) {
+        lab <- attr(data[[cn]], "label")
+        if (!is.null(lab)) {
+          cols <- c(cols, lab)
+        } else {
+          cols <- c(cols, cn)
+        }
+      }
+      .Object@names <- cols
     }
 
     # empty
+    .Object@ansi <- FALSE
+    .Object@css <- data.frame(i = NA, j = NA, html = NA, id = NA)
+    .Object@grid_hline <- TRUE
+    .Object@grid_hline_header <- TRUE
+    .Object@grid_vline <- TRUE
     .Object@group_data_i <- data.frame()
     .Object@group_data_j <- data.frame()
-    .Object@index_body <- numeric(0)
     .Object@group_index_i <- numeric(0)
-    .Object@id <- get_id("tinytable_")
+    .Object@html_class <- "tinytable"
+    .Object@html_engine <- "tinytable"
+    .Object@html_portable <- FALSE
+    .Object@index_body <- numeric(0)
+    .Object@latex_engine <- "xelatex"
+    .Object@latex_preamble <- TRUE
+    .Object@lazy_finalize <- list()
+    .Object@lazy_format <- list()
+    .Object@lazy_plot <- list()
+    .Object@lazy_prepare <- list()
+    .Object@lazy_subset <- NULL
+    .Object@markdown_style <- "grid"
     .Object@output <- "tinytable"
     .Object@output_dir <- getwd()
-    .Object@css <- data.frame(i = NA, j = NA, bootstrap = NA, id = NA)
-    .Object@portable <- FALSE
     .Object@style <- data.frame()
-    .Object@tabulator_stylesheet <- ""
-    .Object@tabulator_options <- ""
-    .Object@tabulator_column_formatters <- list()
-    .Object@tabulator_column_styles <- list()
-    .Object@tabulator_search <- NULL
-    .Object@tabulator_format_bool <- FALSE
-    .Object@tabulator_css_rule <- ""
-    .Object@tabulator_columns <- list()
     .Object@tabularray_inner <- character()
     .Object@tabularray_outer <- character()
+    .Object@tabulator_column_formatters <- list()
+    .Object@tabulator_column_styles <- list()
+    .Object@tabulator_columns <- list()
+    .Object@tabulator_css_rule <- ""
+    .Object@tabulator_format_bool <- FALSE
+    .Object@tabulator_options <- ""
+    .Object@tabulator_search <- NULL
+    .Object@tabulator_stylesheet <- ""
 
     return(.Object)
   })
@@ -226,7 +258,7 @@ setMethod("as.character", "tinytable", function(x) {
 })
 
 setClass("tinytable_tabularray", contains = "tinytable")
-setClass("tinytable_bootstrap", contains = "tinytable")
+setClass("tinytable_html", contains = "tinytable")
 setClass("tinytable_typst", contains = "tinytable")
 setClass("tinytable_grid", contains = "tinytable")
 setClass("tinytable_dataframe", contains = "tinytable")

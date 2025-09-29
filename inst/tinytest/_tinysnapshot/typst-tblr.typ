@@ -37,6 +37,7 @@ block[ // start block
     if ("bold" in style) { tmp = strong(tmp) }
     if ("mono" in style) { tmp = math.mono(tmp) }
     if ("strikeout" in style) { tmp = strike(tmp) }
+    if ("smallcaps" in style) { tmp = smallcaps(tmp) }
     tmp
   }
 
@@ -55,12 +56,17 @@ block[ // start block
       if style != none and "background" in style { style.background }
     },
  table.hline(y: 1, start: 0, end: 5, stroke: 0.05em + black),
- table.hline(y: 2, start: 1, end: 3, stroke: 0.05em + rgb("#FF0000")), table.hline(y: 3, start: 1, end: 3, stroke: 0.05em + rgb("#FF0000")),
- table.hline(y: 3, start: 1, end: 3, stroke: 0.05em + rgb("#FF0000")), table.hline(y: 4, start: 1, end: 3, stroke: 0.05em + rgb("#FF0000")),
+ table.hline(y: 3, start: 1, end: 3, stroke: 0.05em + rgb("#FF0000")),
+ table.hline(y: 4, start: 1, end: 3, stroke: 0.05em + rgb("#FF0000")),
+
+ table.hline(y: 2, start: 1, end: 3, stroke: 0.05em + rgb("#FF0000")),
+ table.hline(y: 3, start: 1, end: 3, stroke: 0.05em + rgb("#FF0000")),
  table.hline(y: 6, start: 0, end: 5, stroke: 0.1em + black),
  table.hline(y: 0, start: 0, end: 5, stroke: 0.1em + black),
- table.vline(x: 1, start: 2, end: 4, stroke: 0.05em + rgb("#FF0000")), table.vline(x: 2, start: 2, end: 4, stroke: 0.05em + rgb("#FF0000")),
- table.vline(x: 2, start: 2, end: 4, stroke: 0.05em + rgb("#FF0000")), table.vline(x: 3, start: 2, end: 4, stroke: 0.05em + rgb("#FF0000")),
+ table.vline(x: 1, start: 2, end: 4, stroke: 0.05em + rgb("#FF0000")),
+ table.vline(x: 2, start: 2, end: 4, stroke: 0.05em + rgb("#FF0000")),
+ table.vline(x: 2, start: 2, end: 4, stroke: 0.05em + rgb("#FF0000")),
+ table.vline(x: 3, start: 2, end: 4, stroke: 0.05em + rgb("#FF0000")),
     // tinytable lines before
 
     // tinytable header start

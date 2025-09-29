@@ -37,6 +37,7 @@ block[ // start block
     if ("bold" in style) { tmp = strong(tmp) }
     if ("mono" in style) { tmp = math.mono(tmp) }
     if ("strikeout" in style) { tmp = strike(tmp) }
+    if ("smallcaps" in style) { tmp = smallcaps(tmp) }
     tmp
   }
 
@@ -55,7 +56,12 @@ block[ // start block
       if style != none and "background" in style { style.background }
     },
  table.hline(y: 4, start: 0, end: 5, stroke: 0.1em + black),
- table.hline(y: 0, start: 0, end: 5, stroke: 0.1em + black),
+ table.hline(y: 0, start: 0, end: 1, stroke: 0.1em + black),
+ table.hline(y: 0, start: 0, end: 2, stroke: 0.1em + black),
+ table.hline(y: 0, start: 1, end: 3, stroke: 0.1em + black),
+ table.hline(y: 0, start: 2, end: 4, stroke: 0.1em + black),
+ table.hline(y: 0, start: 3, end: 5, stroke: 0.1em + black),
+ table.hline(y: 0, start: 4, end: 5, stroke: 0.1em + black),
     // tinytable lines before
 
     // tinytable cell content after

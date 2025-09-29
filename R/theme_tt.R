@@ -21,7 +21,7 @@ theme_tt <- function(x, theme, ...) {
     "* theme_revealjs()",
     "* theme_rotate()",
     "* theme_striped()",
-    "* theme_void()"
+    "* theme_empty()"
   ), collapse = "\n")
 
   format_msg <- paste0("\nFormat-specific functions:\n\n", format_functions)
@@ -35,6 +35,7 @@ theme_tt <- function(x, theme, ...) {
     call. = FALSE
   )
 
+
   if (identical(theme, "default")) {
     x <- theme_default(x)
   } else if (identical(theme, "grid")) {
@@ -43,8 +44,10 @@ theme_tt <- function(x, theme, ...) {
     x <- theme_revealjs(x, ...)
   } else if (identical(theme, "striped")) {
     x <- theme_striped(x)
+  } else if (identical(theme, "empty")) {
+    x <- theme_empty(x)
   } else if (identical(theme, "void")) {
-    x <- theme_void(x)
+    x <- theme_empty(x)
   } else if (identical(theme, "rotate")) {
     x <- theme_rotate(x, ...)
   }

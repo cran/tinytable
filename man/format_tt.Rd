@@ -25,7 +25,9 @@ format_tt(
   markdown = get_option("tinytable_format_markdown", default = FALSE),
   quarto = get_option("tinytable_format_quarto", default = FALSE),
   fn = get_option("tinytable_format_fn", default = NULL),
-  sprintf = get_option("tinytable_format_sprintf", default = NULL)
+  sprintf = get_option("tinytable_format_sprintf", default = NULL),
+  linebreak = get_option("tinytable_format_linebreak", default = NULL),
+  output = get_option("tinytable_format_output", default = NULL)
 )
 
 tt_format(
@@ -48,7 +50,9 @@ tt_format(
   markdown = get_option("tinytable_format_markdown", default = FALSE),
   quarto = get_option("tinytable_format_quarto", default = FALSE),
   fn = get_option("tinytable_format_fn", default = NULL),
-  sprintf = get_option("tinytable_format_sprintf", default = NULL)
+  sprintf = get_option("tinytable_format_sprintf", default = NULL),
+  linebreak = get_option("tinytable_format_linebreak", default = NULL),
+  output = get_option("tinytable_format_output", default = NULL)
 )
 }
 \arguments{
@@ -66,6 +70,7 @@ tt_format(
 \item Integer vectors indicating column positions.
 \item Character vector indicating column names.
 \item A single string specifying a Perl-style regular expression used to match column names.
+\item Unquoted expression: Non-standard evaluation is supported. When supplying an unquoted expression, it is first evaluated in the calling environment, then in an environment that includes the columns of the original data passed to \code{tt()}, and \code{groupi} indices. See examples below.
 }}
 
 \item{digits}{Number of significant digits or decimal places.}
@@ -111,6 +116,10 @@ tt_format(
 \item{fn}{Function for custom formatting. Accepts a vector and returns a character vector of the same length.}
 
 \item{sprintf}{String passed to the \code{?sprintf} function to format numbers or interpolate strings with a user-defined pattern (similar to the \code{glue} package, but using Base R).}
+
+\item{linebreak}{NULL or a single string. If it is a string, replaces that string with appropriate line break sequences depending on the output format (HTML: \verb{<br>}, LaTeX: \verb{\\\\\\\\}, Typst: \verb{\\\\ }). Markdown output is excluded from line break replacement.}
+
+\item{output}{Apply formatting only if the \code{tt()} object is rendered in the specified format. One of "latex", "html", "typst", or "markdown". If \code{NULL} (default), apply formatting regardless of the output format.}
 }
 \value{
 A data frame with formatted columns.
@@ -139,29 +148,11 @@ Nearly all of the package's functions retrieve their default values from global 
 }\if{html}{\out{</div>}}
 
 In addition, some more specific options are available to control the behavior of the package in specific contexts.
-\subsection{HTML}{
 \itemize{
 \item \code{tinytable_html_mathjax}: Insert MathJax scripts (warning: may conflict if MathJax is loaded elsewhere)
-\item \code{tinytable_html_portable}: Insert base64 encoded images directly in HTML for \code{plot_tt()}
-\item \code{tinytable_html_engine}: Default HTML engine (default: "bootstrap"). Set to "tabulator" to use interactive tables by default in HTML documents instead of static Bootstrap tables.
+\item \code{tinytable_pdf_clean}: Delete temporary and log files for pdf output in \code{save_tt()}
+\item \code{tinytable_color_name_normalization}: Enable/disable automatic color name processing (default: TRUE). When enabled, R color names recognized by \code{col2rgb()} are converted to hex format for consistent rendering across HTML, LaTeX, and Typst formats. If R color conversion fails, LaTeX color names are used as fallback. Colors explicitly supplied as hex values with "#" prefix are passed through unchanged. Set to FALSE to disable processing and pass color names unchanged.
 }
-}
-
-\subsection{PDF}{
-\itemize{
-\item \code{tinytable_pdf_clean}: Delete temporary and log files
-\item \code{tinytable_pdf_engine}: Choose between "xelatex", "pdflatex", "lualatex"
-}
-}
-
-\subsection{Color processing}{
-\itemize{
-\item \code{tinytable_color_name_normalization}: Enable/disable automatic color name processing (default: TRUE).
-}
-
-When enabled, R color names recognized by \code{col2rgb()} are converted to hex format for consistent rendering across HTML, LaTeX, and Typst formats. If R color conversion fails, LaTeX color names are used as fallback. Colors explicitly supplied as hex values with "#" prefix are passed through unchanged. Set to FALSE to disable processing and pass color names unchanged.
-}
-
 \subsection{Quarto}{
 
 The \code{format_tt(quarto=TRUE)} argument enables Quarto data processing with some limitations:
@@ -173,8 +164,6 @@ The \code{format_tt(quarto=TRUE)} argument enables Quarto data processing with s
 Options:
 \itemize{
 \item \code{tinytable_quarto_disable_processing}: Disable Quarto cell processing
-\item \code{tinytable_print_rstudio_notebook}: Display tables "inline" or in "viewer" for RStudio notebooks
-\item \code{tinytable_quarto_figure}: Control Typst figure environment in Quarto
 }
 
 Example of Quarto-specific code in cells:
@@ -220,6 +209,20 @@ format_tt(y, digits = 3, num_mark_big = " ")
 
 x <- tt(data.frame(Text = c("_italicized text_", "__bold text__")))
 format_tt(x, markdown = TRUE)
+
+# Line breaks using linebreak argument
+d <- data.frame(Text = "First line<br>Second line")
+tt(d) |> format_tt(linebreak = "<br>")
+
+# Non-standard evaluation (NSE)
+dat <- data.frame(
+  w = c(143002.2092, 201399.181, 100188.3883),
+  x = c(1.43402, 201.399, 0.134588),
+  y = as.Date(c(897, 232, 198), origin = "1970-01-01"),
+  z = c(TRUE, TRUE, FALSE)
+)
+tt(dat) |>
+  format_tt(i = w > 150000, j = w, digits = 0, num_mark_big = ",")
 
 tab <- data.frame(a = c(NA, 1, 2), b = c(3, NA, 5))
 tt(tab) |> format_tt(replace = "-")

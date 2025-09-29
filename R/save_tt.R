@@ -4,9 +4,9 @@
 #'
 #' @param x The tinytable object to be saved.
 #' @param output String or file path.
-#' + If `output` is "markdown", "latex", "html", "html_portable", "typst", or "tabulator", the table is returned in a string as an `R` object.
+#' + If `output` is "markdown", "latex", "html", "typst", or "tabulator", the table is returned in a string as an `R` object.
 #' + If `output` is a valid file path, the table is saved to file. The supported extensions are: .docx, .html, .png, .pdf, .tex, .typ, and .md (with aliases .txt, .Rmd and .qmd).
-#' + If `output` is "html_portable" or the global option `tinytable_html_portable` is `TRUE`,
+#' + If the global option `tinytable_html_portable` is `TRUE`,
 #' the images are included in the HTML as base64 encoded string instead of link to a local file.
 #' @param overwrite A logical value indicating whether to overwrite an existing file.
 #' @return A string with the table when `output` is a format, and the file path when `output` is a valid path.
@@ -33,32 +33,12 @@ save_tt <- function(
   assert_string(output)
   assert_flag(overwrite)
 
-  if (file.exists(output) && !overwrite) {
-    stop("File already exists and overwrite is set to FALSE.", call. = FALSE)
-  }
-
-  if (isTRUE(getOption("tinytable_html_portable", default = FALSE))) {
-    assert_dependency("base64enc")
-    x@portable <- TRUE
-  }
-
-  if (identical(output, "html_portable")) {
-    assert_dependency("base64enc")
-    output <- "bootstrap"
-    x@portable <- TRUE
-  }
 
   if (identical(output, "markdown")) {
     out <- build_tt(x, output = "markdown")@table_string
     return(as.character(out))
-  } else if (identical(output, "gfm")) {
-    out <- build_tt(x, output = "gfm")@table_string
-    return(as.character(out))
   } else if (identical(output, "html")) {
     out <- build_tt(x, output = "html")@table_string
-    return(as.character(out))
-  } else if (identical(output, "bootstrap")) {
-    out <- build_tt(x, output = "bootstrap")@table_string
     return(as.character(out))
   } else if (identical(output, "latex")) {
     out <- build_tt(x, output = "latex")@table_string
@@ -66,12 +46,15 @@ save_tt <- function(
   } else if (identical(output, "typst")) {
     out <- build_tt(x, output = "typst")@table_string
     return(as.character(out))
-  } else if (identical(output, "tabulator")) {
-    out <- build_tt(x, output = "tabulator")@table_string
-    return(as.character(out))
   } else if (identical(output, "dataframe")) {
     out <- build_tt(x, output = "dataframe")@data_body
+    out <- as.data.frame(lapply(out, trimws))
+    colnames(out) <- NULL
     return(out)
+  }
+
+  if (file.exists(output) && !overwrite) {
+    stop("File already exists and overwrite is set to FALSE.", call. = FALSE)
   }
 
   x@output_dir <- dirname(output)
@@ -80,7 +63,7 @@ save_tt <- function(
 
   output_format <- switch(file_ext,
     "png" = "html",
-    "html" = get_option("tinytable_html_engine", default = "bootstrap"),
+    "html" = "html",
     "pdf" = "latex",
     "tex" = "latex",
     "md" = "markdown",
@@ -90,7 +73,7 @@ save_tt <- function(
     "docx" = "markdown",
     "typ" = "typst",
     stop(
-      "The supported file extensions are: .png, .html, .pdf, .tex, .typ, .qmd, .Rmd, .txt, .docx, and .md. Supported output formats are: markdown, latex, html, typst, tabulator, and dataframe.",
+      "The supported file extensions are: .png, .html, .pdf, .tex, .typ, .qmd, .Rmd, .txt, .docx, and .md. Supported output formats are: markdown, latex, typst, html, and dataframe.",
       call. = FALSE
     )
   )
@@ -140,11 +123,11 @@ save_tt <- function(
     )
 
     # render
-    engine <- get_option("tinytable_pdf_engine", default = "xelatex")
+    engine <- x@latex_engine
     assert_choice(
       engine,
       c("xelatex", "pdflatex", "lualatex"),
-      name = "tinytable_pdf_engine"
+      name = "latex_engine"
     )
     tinytex::latexmk(f, pdf_file = output, engine = engine)
 
@@ -175,7 +158,6 @@ latex_standalone <- "
 \\usepackage{float}
 \\usepackage[normalem]{ulem}
 \\usepackage[x11names, svgnames]{xcolor}
-\\UseTblrLibrary{booktabs}
 \\UseTblrLibrary{siunitx}
 \\newcommand{\\tinytableTabularrayUnderline}[1]{\\underline{#1}}
 \\newcommand{\\tinytableTabularrayStrikeout}[1]{\\sout{#1}}

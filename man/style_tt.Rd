@@ -12,6 +12,7 @@ style_tt(
   bold = FALSE,
   italic = FALSE,
   monospace = FALSE,
+  smallcap = FALSE,
   underline = FALSE,
   strikeout = FALSE,
   color = NULL,
@@ -25,6 +26,7 @@ style_tt(
   line = NULL,
   line_color = "black",
   line_width = 0.1,
+  line_trim = NULL,
   finalize = NULL,
   ...
 )
@@ -36,6 +38,7 @@ tt_style(
   bold = FALSE,
   italic = FALSE,
   monospace = FALSE,
+  smallcap = FALSE,
   underline = FALSE,
   strikeout = FALSE,
   color = NULL,
@@ -49,6 +52,7 @@ tt_style(
   line = NULL,
   line_color = "black",
   line_width = 0.1,
+  line_trim = NULL,
   finalize = NULL,
   ...
 )
@@ -56,11 +60,12 @@ tt_style(
 \arguments{
 \item{x}{A table object created by \code{tt()}.}
 
-\item{i}{Numeric vector, logical matrix, or string.
+\item{i}{Numeric vector, logical matrix, string, or unquoted expression.
 \itemize{
 \item Numeric vector: Row indices where the styling should be applied. Can be a single value or a vector.
 \item Logical matrix: A matrix with the same number of rows and columns as \code{x}. \code{i=0} is the header, and negative values are higher level headers. Row indices refer to rows \emph{after} the insertion of row labels by \code{group_tt()}, when applicable.
 \item String: Table components "caption", "colnames", "groupi" (row group labels), "~groupi" (non-group rows), "groupj" (column group labels), "notes".
+\item Unquoted expression: When supplying an unquoted expression, it is first evaluated in the calling environment, then in the data frame passed to \code{tt()}.
 }}
 
 \item{j}{Column indices where the styling should be applied. Can be:
@@ -68,6 +73,7 @@ tt_style(
 \item Integer vectors indicating column positions.
 \item Character vector indicating column names.
 \item A single string specifying a Perl-style regular expression used to match column names.
+\item Unquoted expression: Non-standard evaluation is supported. When supplying an unquoted expression, it is first evaluated in the calling environment, then in an environment that includes the columns of the original data passed to \code{tt()}, and \code{groupi} indices. See examples below.
 }}
 
 \item{bold}{Logical; if \code{TRUE}, text is styled in bold.}
@@ -76,27 +82,21 @@ tt_style(
 
 \item{monospace}{Logical; if \code{TRUE}, text is styled in monospace font.}
 
+\item{smallcap}{Logical; if \code{TRUE}, text is styled in small caps. In Markdown output format, text is converted to uppercase.}
+
 \item{underline}{Logical; if \code{TRUE}, text is underlined.}
 
 \item{strikeout}{Logical; if \code{TRUE}, text has a strike through line.}
 
-\item{color}{Text color. There are several ways to specify colors, depending on the output format.
+\item{color}{Text color. Colors are standardized across output formats and can be specified as:
 \itemize{
-\item HTML:
-\itemize{
-\item Hex code composed of # and 6 characters, ex: #CC79A7.
-\item Keywords: black, silver, gray, white, maroon, red, purple, fuchsia, green, lime, olive, yellow, navy, blue, teal, aqua
-}
-\item LaTeX:
-\itemize{
-\item Hex code composed of # and 6 characters, ex: "#CC79A7". See the section below for instructions to add in LaTeX preambles.
-\item Keywords: black, blue, brown, cyan, darkgray, gray, green, lightgray, lime, magenta, olive, orange, pink, purple, red, teal, violet, white, yellow.
-\item Color blending using xcolor\verb{, ex: }white!80!blue\verb{, }green!20!red`.
-\item Color names with luminance levels from \href{https://mirror.quantum5.ca/CTAN/macros/latex/contrib/ninecolors/ninecolors.pdf}{the \code{ninecolors} package} (ex: "azure4", "magenta8", "teal2", "gray1", "olive3").
-}
+\item Hex codes: "#CC79A7", "#FF0000", "#123ABC"
+\item R color names: Any color recognized by R, such as "red", "blue", "forestgreen", "lightblue"
+\item Extended color names: 749+ named colors from the LaTeX xcolor package (see \code{tinytable:::latex_colors} for the full list)
+\item LaTeX color blending (LaTeX output only): "white!80!blue", "red!50", "green!20!red"
 }}
 
-\item{background}{Background color. Specified as a color name or hexadecimal code. Can be \code{NULL} for default color.}
+\item{background}{Background color. Same color specification options as the \code{color} parameter. Can be \code{NULL} for default color.}
 
 \item{fontsize}{Font size in em units. Can be \code{NULL} for default size.}
 
@@ -123,6 +123,8 @@ tt_style(
 
 \item{line_width}{Width of the line in em units (default: 0.1).}
 
+\item{line_trim}{String specifying line trimming. Acceptable values: "l" (left), "r" (right), "lr" (both sides). When specified, shortens the lines by 0.8pt on the specified side(s). Default: NULL (no trimming).}
+
 \item{finalize}{A function applied to the table object at the very end of table-building, for post-processing. For example, the function could use regular expressions to add LaTeX commands to the text version of the table hosted in \code{x@table_string}, or it could programmatically change the caption in \code{x@caption}.}
 
 \item{...}{extra arguments are ignored}
@@ -138,15 +140,26 @@ Alias for \code{style_tt()}
 \details{
 This function applies styling to a table created by \code{tt()}. It allows customization of text style (bold, italic, monospace), text and background colors, font size, cell width, text alignment, column span, and indentation. The function also supports passing native instructions to LaTeX (tabularray) and HTML (bootstrap) formats.
 }
-\section{Word and Markdown limitations}{
+\section{Markdown limitations}{
 
 
-Markdown and Word tables only support these styles: italic, bold, strikeout. The \code{width} argument is also unavailable
+Markdown is a text-only format that only supports these styles: italic, bold, strikeout. The \code{width} argument is also unavailable.
+These limitations exist because there is no standard markdown syntax for the other styling options.
+
+However, in terminals (consoles) that support it, \code{tinytable} can display colors and text styles using
+ANSI escape codes by setting \code{theme_markdown(ansi = TRUE)}. This allows for rich formatting in
+compatible terminal environments.
+}
+
+\section{Word limitations}{
+
+
+Word tables only support these styles: italic, bold, strikeout. The \code{width} argument is also unavailable.
 Moreover, the \code{style_tt()} function cannot be used to style headers inserted by the \code{group_tt()} function;
 instead, you should style the headers directly in the header definition using markdown syntax:
-\code{group_tt(i = list("*italic header*" = 2))}. These limitations are due to the fact that there is no markdown
-syntax for the other options, and that we create Word documents by converting a markdown table to .docx
-via the Pandoc software.
+\code{group_tt(i = list("*italic header*" = 2))}. These limitations are due to the fact that we create
+Word documents by converting a markdown table to .docx via the Pandoc software, which requires
+going through a text-only intermediate format.
 }
 
 \examples{
@@ -176,7 +189,7 @@ tt(mtcars[1:5, 1:6]) |>
 tt(mtcars[1:5, 1:6]) |>
   style_tt(j = c("drat", "wt"), background = "pink")
 
-tt(mtcars[1:5, 1:6], theme = "void") |>
+tt(mtcars[1:5, 1:6], theme = "empty") |>
   style_tt(
     i = 2, j = 2,
     colspan = 3,
@@ -187,7 +200,7 @@ tt(mtcars[1:5, 1:6], theme = "void") |>
     background = "black",
     bold = TRUE)
 
-tt(mtcars[1:5, 1:6], theme = "void") |>
+tt(mtcars[1:5, 1:6], theme = "empty") |>
   style_tt(
     i = 0:3,
     j = 1:3,
@@ -201,6 +214,17 @@ tt(mtcars[1:5, 1:6], theme = "striped") |>
     j = 3,
     strikeout = TRUE,
     fontsize = 0.7)
+
+# Non-standard evaluation (NSE)
+dat <- data.frame(
+  w = c(143002.2092, 201399.181, 100188.3883),
+  x = c(1.43402, 201.399, 0.134588),
+  y = as.Date(c(897, 232, 198), origin = "1970-01-01"),
+  z = c(TRUE, TRUE, FALSE)
+)
+tt(dat) |>
+  style_tt(i = w > 150000, j = c("w", "x"), 
+           color = "white", background = "black")
 
 tt(mtcars[1:5, 1:6]) |>
   theme_html(class = "table table-dark table-hover")
@@ -216,7 +240,7 @@ cell{2,4}{1,4} = {bg=red7},
 cell{3,5}{1,4} = {bg=purple7},
 cell{2}{2} = {r=4,c=2}{bg=azure7},
 "
-tt(mtcars[1:5, 1:4], theme = "void") |>
+tt(mtcars[1:5, 1:4], theme = "empty") |>
   theme_latex(inner = inner)
 
 # Style group rows and non-group rows
@@ -226,5 +250,25 @@ dat |>
   group_tt(i = list("Group A" = 3)) |>
   style_tt(i = "groupi", background = "lightblue") |>
   style_tt(i = "~groupi", background = "lightgray")
+
+# unquote expressions
+dat <- mtcars[1:10,]
+dat <- dat[order(dat$am),]
+tt(dat) |>
+   subset(mpg > 20) |>
+   group_tt(am)
+
+# style elements: captions and colnames
+notes <- list(
+  "*" = "Hello world", 
+  "a" = "Bacon ipsum dolor amet kevin t-bone porchetta.")
+tt(head(iris), 
+   width = .5,
+   caption = "This is a Caption Example.", 
+   notes = notes) |>
+  style_tt(2, 2, background = "pink", rowspan = 2, colspan = 2, 
+    alignv = "m", align = "c", line = "tblr") |>
+  style_tt("colnames", italic = TRUE) |>
+  style_tt("caption", smallcap = TRUE)
 
 }

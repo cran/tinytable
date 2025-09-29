@@ -25,12 +25,13 @@ strip_random_sequential <- function(x, stem = "tinytable_css_") {
 }
 strip_random <- function(x) {
   for (stem in c(
-    "tinytable_css_",
-    "tinytable_(?!css)",
-    "styleCell_",
-    "spanCell_",
     "insertSpanRow",
+    "spanCell_",
+    "styleCell_",
     "styleHeaderCell_",
+    "tableFns_",
+    "tinytable_(?!css)",
+    "tinytable_css_",
     "tinytable/"
   )) {
     x <- strip_random_sequential(x, stem)
@@ -72,7 +73,7 @@ print.custom_html_string <- function(x, ...) {
   invisible(x)
 }
 
-print_html <- function(x, output = c("html", "html_portable")) {
+print_html <- function(x, output = c("html")) {
   output <- match.arg(output)
   x <- save_tt(x, output)
   class(x) <- c("custom_html_string", class(x))

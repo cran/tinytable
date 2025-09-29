@@ -20,7 +20,7 @@ tt_group(
 )
 }
 \arguments{
-\item{x}{A data frame or data table to be rendered as a table.}
+\item{x}{A data frame, data table, or tibble to be rendered as a table.}
 
 \item{i}{Character vector, named list, or integer vector
 \itemize{
@@ -39,6 +39,7 @@ tt_group(
 \item Named list of column indices to group, ex: \code{j=list("A"=1:2,"B"=3:6)}. The names of the list will be used as labels. See below for more examples. Note: empty labels must be a space: " ".
 \item A single string when column names include the group name as a prefix, ex: group1_column1, group1_column2, etc.
 \item Character matrix for inserting rows at positions specified by \code{i}. The matrix must have the same number of columns as the table, or be a single column with a number of elements that is a multiple of the table's column count (which will be automatically reshaped). Each row of the matrix matches an element
+\item Unquoted expression: Non-standard evaluation is supported. When supplying an unquoted expression, it is first evaluated in the calling environment, then in the data frame passed to \code{tt()}.
 }}
 
 \item{...}{Other arguments are ignored.}
@@ -54,15 +55,26 @@ Alias for \code{group_tt()}
 \details{
 Warning: The \code{style_tt()} can normally be used to style the group headers, as expected, but that feature is not available for Markdown and Word tables.
 }
-\section{Word and Markdown limitations}{
+\section{Markdown limitations}{
 
 
-Markdown and Word tables only support these styles: italic, bold, strikeout. The \code{width} argument is also unavailable
+Markdown is a text-only format that only supports these styles: italic, bold, strikeout. The \code{width} argument is also unavailable.
+These limitations exist because there is no standard markdown syntax for the other styling options.
+
+However, in terminals (consoles) that support it, \code{tinytable} can display colors and text styles using
+ANSI escape codes by setting \code{theme_markdown(ansi = TRUE)}. This allows for rich formatting in
+compatible terminal environments.
+}
+
+\section{Word limitations}{
+
+
+Word tables only support these styles: italic, bold, strikeout. The \code{width} argument is also unavailable.
 Moreover, the \code{style_tt()} function cannot be used to style headers inserted by the \code{group_tt()} function;
 instead, you should style the headers directly in the header definition using markdown syntax:
-\code{group_tt(i = list("*italic header*" = 2))}. These limitations are due to the fact that there is no markdown
-syntax for the other options, and that we create Word documents by converting a markdown table to .docx
-via the Pandoc software.
+\code{group_tt(i = list("*italic header*" = 2))}. These limitations are due to the fact that we create
+Word documents by converting a markdown table to .docx via the Pandoc software, which requires
+going through a text-only intermediate format.
 }
 
 \examples{

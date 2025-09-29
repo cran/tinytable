@@ -12,7 +12,7 @@
 #'
 #' `tinytable` attempts to determine the appropriate way to print the table based on interactive use, RStudio availability, and output format in RMarkdown or Quarto documents. Users can call `print(x, output="markdown")` to print the table in a specific format. Alternatively, they can set a global option: `options("tinytable_print_output"="markdown")`
 #'
-#' @param x A data frame or data table to be rendered as a table.
+#' @param x A data frame, data table, or tibble to be rendered as a table.
 #' @param digits Number of significant digits to keep for numeric variables. When `digits` is an integer, `tt()` calls `format_tt(x, digits = digits)` before proceeding to draw the table. Note that this will apply all default argument values of `format_tt()`, such as replacing `NA` by "". Users who need more control can use the `format_tt()` function instead.
 #' @param caption A string that will be used as the caption of the table. This argument should *not* be used in Quarto or Rmarkdown documents. In that context, please use the appropriate chunk options.
 #' @param width Table or column width.
@@ -27,7 +27,7 @@
 #' * Multiple strings insert multiple notes sequentially: `list("Hello world", "Foo bar")`
 #' * A named list inserts a list with the name as superscript: `list("a" = list("Hello World"))`
 #' * A named list with positions inserts markers as superscripts inside table cells: `list("a" = list(i = 0:1, j = 2, text = "Hello World"))`
-#' @param colnames Logical. If `FALSE`, column names are omitted.
+#' @param colnames `TRUE`, `FALSE`, or "label". If "label", use the `attr(x$col,"label")` attribute if available and fall back on column names otherwise.
 #' @param rownames Logical. If `TRUE`, rownames are included as the first column
 #' @param escape Logical. If `TRUE`, escape special characters in the table. Equivalent to `format_tt(tt(x), escape = TRUE)`.
 #' @param ... Additional arguments are ignored
@@ -42,6 +42,7 @@
 #' @template limitations_word_markdown
 #' @template tabulator
 #' @template global_options
+#' @template order_of_operations
 #'
 #' @examples
 #' library(tinytable)
@@ -64,8 +65,24 @@
 #' k <- data.frame(x = c(0.000123456789, 12.4356789))
 #' tt(k, digits = 2)
 #'
+#' # use variable labels stored in attributes as column names
+#' dat = mtcars[1:5, c("cyl", "mpg", "hp")]
+#' attr(dat$cyl, "label") <- "Cylinders"
+#' attr(dat$mpg, "label") <- "Miles per Gallon"
+#' attr(dat$hp, "label") <- "Horse Power"
+#' tt(dat, colnames = "label")
+#'
 #' @export
-tt <- function(
+# Generic function
+tt <- function(x, ...) {
+  UseMethod("tt")
+}
+
+#' @rdname tt
+#' @export
+
+# Default method (for data.frame, data.table, tbl_df, and other data frame-like objects)
+tt.default <- function(
     x,
     digits = get_option("tinytable_tt_digits", default = NULL),
     caption = get_option("tinytable_tt_caption", default = NULL),
@@ -84,6 +101,10 @@ tt <- function(
   assert_integerish(digits, len = 1, null.ok = TRUE)
   notes <- sanitize_notes(notes)
 
+  if (identical(theme, "void")) {
+    theme <- "empty"
+    warning("`theme = 'void'` is deprecated. Please use `theme = 'empty'` instead.", call. = FALSE)
+  }
   if (!isTRUE(check_function(theme)) && !isTRUE(check_string(theme))) {
     stop("The `theme` argument must be a function or a string.", call. = FALSE)
   }
@@ -105,9 +126,8 @@ tt <- function(
     }
   }
 
-  assert_flag(colnames)
-  if (!isTRUE(colnames)) {
-    colnames(x) <- NULL
+  if (!(is.logical(colnames) && length(colnames) == 1) && !identical(colnames, "label")) {
+    stop("The `colnames` argument must be TRUE, FALSE, or 'label'.", call. = FALSE)
   }
 
   # factors should all be characters (for replace, etc.)
@@ -124,7 +144,8 @@ tt <- function(
     stop(msg, call. = FALSE)
   }
   if (sum(width) > 1) {
-    width <- width / sum(width)
+    # handle remainders gracefully to avoid sum > 100% after rounding
+    width <- percent_sum_100(width) / 100
   }
 
   assert_numeric(height, lower = 0, len = 1, null.ok = TRUE)
@@ -164,7 +185,8 @@ tt <- function(
     notes = notes,
     theme = list(theme),
     width = width,
-    height = height
+    height = height,
+    colnames = colnames
   )
 
   if (is.null(theme)) {
@@ -191,7 +213,7 @@ tt <- function(
       inner = sprintf("rowsep={%sem}", height / 2)
     )
 
-    # Bootstrap/HTML: use CSS padding for row height
+    # HTML: use CSS padding for row height
     out <- theme_html(
       out,
       css = sprintf(
@@ -215,5 +237,28 @@ tt <- function(
     out <- style_tt(out, finalize = fun_typst_height)
   }
 
+  # HTML: add column width styles if multiple widths specified
+  if (!is.null(width) && length(width) > 1) {
+    for (j in seq_len(ncol(x))) {
+      css <- sprintf("width: %s%%;", width[j] / sum(width) * 100)
+      out <- theme_html(out, j = j, css = css)
+    }
+  }
+
   return(out)
+}
+
+#' @export
+tt.data.frame <- function(x, ...) {
+  tt.default(x, ...)
+}
+
+#' @export
+tt.data.table <- function(x, ...) {
+  tt.default(x, ...)
+}
+
+#' @export
+tt.tbl_df <- function(x, ...) {
+  tt.default(x, ...)
 }

@@ -2,9 +2,12 @@
 % Please edit documentation in R/tt.R
 \name{tt}
 \alias{tt}
+\alias{tt.default}
 \title{Draw a Tiny Table}
 \usage{
-tt(
+tt(x, ...)
+
+\method{tt}{default}(
   x,
   digits = get_option("tinytable_tt_digits", default = NULL),
   caption = get_option("tinytable_tt_caption", default = NULL),
@@ -19,7 +22,9 @@ tt(
 )
 }
 \arguments{
-\item{x}{A data frame or data table to be rendered as a table.}
+\item{x}{A data frame, data table, or tibble to be rendered as a table.}
+
+\item{...}{Additional arguments are ignored}
 
 \item{digits}{Number of significant digits to keep for numeric variables. When \code{digits} is an integer, \code{tt()} calls \code{format_tt(x, digits = digits)} before proceeding to draw the table. Note that this will apply all default argument values of \code{format_tt()}, such as replacing \code{NA} by "". Users who need more control can use the \code{format_tt()} function instead.}
 
@@ -43,17 +48,15 @@ tt(
 
 \item{theme}{Function or string.
 \itemize{
-\item String: grid, revealjs, rotate, striped, void
+\item String: grid, revealjs, rotate, striped, empty
 \item Function: Applied to the \code{tinytable} object.
 }}
 
-\item{colnames}{Logical. If \code{FALSE}, column names are omitted.}
+\item{colnames}{\code{TRUE}, \code{FALSE}, or "label". If "label", use the \code{attr(x$col,"label")} attribute if available and fall back on column names otherwise.}
 
 \item{rownames}{Logical. If \code{TRUE}, rownames are included as the first column}
 
 \item{escape}{Logical. If \code{TRUE}, escape special characters in the table. Equivalent to \code{format_tt(tt(x), escape = TRUE)}.}
-
-\item{...}{Additional arguments are ignored}
 }
 \value{
 An object of class \code{tt} representing the table.
@@ -98,7 +101,6 @@ Note: Your document will fail to compile to PDF in Quarto if you enable caching 
 \\usepackage\{graphicx\}
 \\usepackage\{rotating\}
 \\usepackage[normalem]\{ulem\}
-\\UseTblrLibrary\{booktabs\}
 \\UseTblrLibrary\{siunitx\}
 \newcommand{\tinytableTabularrayUnderline}[1]\{\\underline\{#1\}\}
 \newcommand{\tinytableTabularrayStrikeout}[1]\{\\sout\{#1\}\}
@@ -106,15 +108,26 @@ Note: Your document will fail to compile to PDF in Quarto if you enable caching 
 }\if{html}{\out{</div>}}
 }
 
-\section{Word and Markdown limitations}{
+\section{Markdown limitations}{
 
 
-Markdown and Word tables only support these styles: italic, bold, strikeout. The \code{width} argument is also unavailable
+Markdown is a text-only format that only supports these styles: italic, bold, strikeout. The \code{width} argument is also unavailable.
+These limitations exist because there is no standard markdown syntax for the other styling options.
+
+However, in terminals (consoles) that support it, \code{tinytable} can display colors and text styles using
+ANSI escape codes by setting \code{theme_markdown(ansi = TRUE)}. This allows for rich formatting in
+compatible terminal environments.
+}
+
+\section{Word limitations}{
+
+
+Word tables only support these styles: italic, bold, strikeout. The \code{width} argument is also unavailable.
 Moreover, the \code{style_tt()} function cannot be used to style headers inserted by the \code{group_tt()} function;
 instead, you should style the headers directly in the header definition using markdown syntax:
-\code{group_tt(i = list("*italic header*" = 2))}. These limitations are due to the fact that there is no markdown
-syntax for the other options, and that we create Word documents by converting a markdown table to .docx
-via the Pandoc software.
+\code{group_tt(i = list("*italic header*" = 2))}. These limitations are due to the fact that we create
+Word documents by converting a markdown table to .docx via the Pandoc software, which requires
+going through a text-only intermediate format.
 }
 
 \section{Tabulator (interactive tables)}{
@@ -162,29 +175,11 @@ Nearly all of the package's functions retrieve their default values from global 
 }\if{html}{\out{</div>}}
 
 In addition, some more specific options are available to control the behavior of the package in specific contexts.
-\subsection{HTML}{
 \itemize{
 \item \code{tinytable_html_mathjax}: Insert MathJax scripts (warning: may conflict if MathJax is loaded elsewhere)
-\item \code{tinytable_html_portable}: Insert base64 encoded images directly in HTML for \code{plot_tt()}
-\item \code{tinytable_html_engine}: Default HTML engine (default: "bootstrap"). Set to "tabulator" to use interactive tables by default in HTML documents instead of static Bootstrap tables.
+\item \code{tinytable_pdf_clean}: Delete temporary and log files for pdf output in \code{save_tt()}
+\item \code{tinytable_color_name_normalization}: Enable/disable automatic color name processing (default: TRUE). When enabled, R color names recognized by \code{col2rgb()} are converted to hex format for consistent rendering across HTML, LaTeX, and Typst formats. If R color conversion fails, LaTeX color names are used as fallback. Colors explicitly supplied as hex values with "#" prefix are passed through unchanged. Set to FALSE to disable processing and pass color names unchanged.
 }
-}
-
-\subsection{PDF}{
-\itemize{
-\item \code{tinytable_pdf_clean}: Delete temporary and log files
-\item \code{tinytable_pdf_engine}: Choose between "xelatex", "pdflatex", "lualatex"
-}
-}
-
-\subsection{Color processing}{
-\itemize{
-\item \code{tinytable_color_name_normalization}: Enable/disable automatic color name processing (default: TRUE).
-}
-
-When enabled, R color names recognized by \code{col2rgb()} are converted to hex format for consistent rendering across HTML, LaTeX, and Typst formats. If R color conversion fails, LaTeX color names are used as fallback. Colors explicitly supplied as hex values with "#" prefix are passed through unchanged. Set to FALSE to disable processing and pass color names unchanged.
-}
-
 \subsection{Quarto}{
 
 The \code{format_tt(quarto=TRUE)} argument enables Quarto data processing with some limitations:
@@ -196,8 +191,6 @@ The \code{format_tt(quarto=TRUE)} argument enables Quarto data processing with s
 Options:
 \itemize{
 \item \code{tinytable_quarto_disable_processing}: Disable Quarto cell processing
-\item \code{tinytable_print_rstudio_notebook}: Display tables "inline" or in "viewer" for RStudio notebooks
-\item \code{tinytable_quarto_figure}: Control Typst figure environment in Quarto
 }
 
 Example of Quarto-specific code in cells:
@@ -211,6 +204,22 @@ For more details on Quarto table processing: https://quarto.org/docs/authoring/t
 }
 
 }
+}
+
+\section{Order of Operations}{
+
+
+When building tables, tinytable applies operations in this specific order:
+\enumerate{
+\item \code{format_tt()}: Number and string formatting operations are applied first to ensure all data is properly formatted before any other operations.
+\item \code{group_tt()}: Row and column grouping operations are applied to insert group headers and modify table structure.
+\item \code{theme} argument in \code{tt()}: The theme specified in the theme argument is applied immediately when creating the table object.
+\item \verb{theme_*()} with delayed execution via \code{build_prepare()}: Theme functions that need to be applied after the table structure is finalized (such as those that depend on final row/column indices) are executed at this stage. Examples include \code{theme_default()} which applies default borders after groups are inserted. Internally, \code{build_prepare()} allows calling \code{style_tt()} with full knowledge of the output format and access to internal slots like \code{x@output}.
+\item \code{style_tt()} and \verb{theme_*()} with immediate execution: Direct styling calls and theme functions without delayed execution are applied in the order they appear in the code.
+\item \verb{theme_*()} with delayed execution via \code{build_finalize()}: Final theme operations that need to modify the rendered table string are applied last. Examples include \code{theme_rotate()} which wraps the entire table output. Internally, \code{build_finalize()} allows post-processing the rendered table in text format using regular expressions and string manipulations.
+}
+
+This order ensures that structural changes (grouping) happen before styling, and that operations requiring the final table structure are deferred appropriately. When conflicts arise between operations at the same level, "last applied wins" - the most recent operation takes precedence.
 }
 
 \examples{
@@ -233,5 +242,12 @@ print(tab, "latex")
 
 k <- data.frame(x = c(0.000123456789, 12.4356789))
 tt(k, digits = 2)
+
+# use variable labels stored in attributes as column names
+dat = mtcars[1:5, c("cyl", "mpg", "hp")]
+attr(dat$cyl, "label") <- "Cylinders"
+attr(dat$mpg, "label") <- "Miles per Gallon"
+attr(dat$hp, "label") <- "Horse Power"
+tt(dat, colnames = "label")
 
 }

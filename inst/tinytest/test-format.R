@@ -99,7 +99,7 @@ dict <- list("-" = c(NA, NaN), "Tiny" = -Inf, "Huge" = Inf)
 tab <- tt(x) |>
   format_tt(replace = dict) |>
   save_tt("dataframe")
-expect_equivalent(tab$y, c("3.141593", "-", "-", "Tiny", "Huge"))
+expect_equivalent(tab[[2]], c("y", "3.141593", "-", "-", "Tiny", "Huge"))
 
 # Issue #256: big mark for integers
 tab <- data.frame(x = c(1332037, 1299128, 805058, 206840, 698511)) |>
@@ -107,22 +107,22 @@ tab <- data.frame(x = c(1332037, 1299128, 805058, 206840, 698511)) |>
   format_tt(num_mark_big = " ", digits = 0, num_fmt = "decimal") |>
   save_tt("dataframe")
 expect_equivalent(
-  tab$x,
-  c("1 332 037", "1 299 128", "805 058", "206 840", "698 511")
+  tab[[1]],
+  c("x", "1 332 037", "1 299 128", "805 058", "206 840", "698 511")
 )
 
 x <- data.frame(x = pi, y = NA)
 options(tinytable_tt_digits = 2)
 tab <- tt(x) |> save_tt("dataframe")
-expect_equivalent(tab$y, "")
+expect_equivalent(tab[[2]], c("y", ""))
 
 options(tinytable_format_replace = "zzz")
 tab <- tt(x) |> save_tt("dataframe")
-expect_equivalent(tab$y, "zzz")
+expect_equivalent(tab[[2]], c("y", "zzz"))
 
 options(tinytable_format_replace = FALSE)
 tab <- tt(x) |> save_tt("dataframe")
-expect_equivalent(tab$y, "NA")
+expect_equivalent(tab[[2]], c("y", "NA"))
 
 options(tinytable_print_output = NULL)
 options(tinytable_tt_digits = NULL)
@@ -167,11 +167,11 @@ tab <- tt(thumbdrives) |>
   format_tt(j = 5, fn = scales::label_percent()) |>
   format_tt(escape = TRUE) |>
   save_tt("dataframe")
-expect_true("January 15 2024" %in% tab$date_lookup)
-expect_true("$18.49" %in% tab$price)
-expect_true("16 GB" %in% tab$memory)
-expect_true("99%" %in% tab$speed_benchmark)
-expect_false("2024-01-15" %in% tab$date_lookup)
+expect_true("January 15 2024" %in% tab[[1]])
+expect_false("2024-01-15" %in% tab[[1]])
+expect_true("$18.49" %in% tab[[2]])
+expect_true("16 GB" %in% tab[[4]])
+expect_true("99%" %in% tab[[5]])
 
 # Issue #409: both NA and NaN should be replaced
 options(tinytable_format_replace = NULL)
@@ -183,9 +183,9 @@ tab1 <- tt(tab) |>
 tab2 <- tt(tab) |>
   format_tt(replace = TRUE) |>
   save_tt("dataframe")
-expect_equivalent(tab0$x, c("1", "NA", "NaN", "Inf"))
-expect_equivalent(tab1$x, c("1", "NA", "NaN", "Inf"))
-expect_equivalent(tab2$x, c("1", "", "", "Inf"))
+expect_equivalent(tab0[[1]], c("x", "1", "NA", "NaN", "Inf"))
+expect_equivalent(tab1[[1]], c("x", "1", "NA", "NaN", "Inf"))
+expect_equivalent(tab2[[1]], c("x", "1", "", "", "Inf"))
 
 # bug: duplicated columns with markdown html
 dat <- data.frame(
@@ -269,6 +269,7 @@ expect_false("--5.1--" %in% tab[[1]])
 
 # Vignette with multiple components
 options(tinytable_print_output = "latex")
+set.seed(48103)
 tab <- data.frame(
   "A_B" = rnorm(5),
   "B_C" = rnorm(5),
@@ -304,3 +305,36 @@ tab1 <- tt(dat1) |>
   group_tt(i = list("First Group" = 2, "Second Group" = 4)) |>
   format_tt(j = 1, sprintf = "((%s))")
 expect_snapshot_print(tab1, label = "format_tt-group_tt_02.md")
+
+
+# Line breaks using linebreak argument
+d <- data.frame(Text = "First line<br>Second line")
+tab <- tt(d) |> format_tt(linebreak = "<br>")
+t <- expect_table(tab, formats = c("html", "latex", "typst"))
+expect_true(grepl("First line<br>Second line", t[["html"]]))
+expect_true(grepl("First line\\\\Second line", t[["latex"]], fixed = TRUE))
+expect_true(grepl("First line \\ Second line", t[["typst"]], fixed = TRUE))
+
+# Date formatting tests
+dates <- as.Date(c("2023-01-01", "2023-12-31"))
+formatted_dates <- format_vector(dates, date = "%Y")
+expect_equivalent(formatted_dates, c("2023", "2023"))
+formatted_dates_full <- format_vector(dates, date = "%B %d, %Y")
+expect_equivalent(formatted_dates_full, c("January 01, 2023", "December 31, 2023"))
+formatted_vector <- format_vector(dates, date = "%Y")
+expect_equivalent(formatted_vector, c("2023", "2023"))
+d <- data.frame(dates = dates)
+tab <- tt(d) |> format_tt(j = 1, date = "%Y")
+formatted_table <- save_tt(tab, "dataframe")
+expect_equivalent(formatted_table[[1]], c("dates", "2023", "2023"))
+
+
+# Conditional formatting
+dat <- data.frame(a = c("*Hello*", "**World**"))
+cap <- "HTML render 1st row. LaTeX render 2nd row."
+tab <- tt(dat, caption = cap) |>
+  format_tt(i = 1, j = 1, markdown = TRUE, output = "html") |>
+  format_tt(i = 2, j = 1, markdown = TRUE, output = "latex")
+t <- expect_table(tab, formats = c("html", "latex"))
+expect_snapshot_print(t[["html"]], "format_tt-conditional_output.html")
+expect_snapshot_print(t[["latex"]], "format_tt-conditional_output.tex")

@@ -39,6 +39,7 @@ block[ // start block
     if ("bold" in style) { tmp = strong(tmp) }
     if ("mono" in style) { tmp = math.mono(tmp) }
     if ("strikeout" in style) { tmp = strike(tmp) }
+    if ("smallcaps" in style) { tmp = smallcaps(tmp) }
     tmp
   }
 
@@ -56,8 +57,6 @@ block[ // start block
       let style = get-style(x, y)
       if style != none and "background" in style { style.background }
     },
- table.hline(y: 5, start: 0, end: 5, stroke: 0.1em + rgb("#d3d8dc")),
- table.hline(y: 0, start: 0, end: 5, stroke: 0.1em + rgb("#d3d8dc")), table.hline(y: 1, start: 0, end: 5, stroke: 0.1em + rgb("#d3d8dc")),
     // tinytable lines before
 
     // tinytable header start

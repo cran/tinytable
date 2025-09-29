@@ -7,7 +7,7 @@
 \method{print}{tinytable}(x, output = get_option("tinytable_print_output", default = NULL), ...)
 }
 \arguments{
-\item{x}{A data frame or data table to be rendered as a table.}
+\item{x}{A data frame, data table, or tibble to be rendered as a table.}
 
 \item{output}{format in which a Tiny Table is printed: \code{NULL} or one of \code{"latex"}, \code{"markdown"}, \code{"html"}, \code{"typst"}, \code{"dataframe"}, \code{"tabulator"}. If \code{NULL}, the output is chosen based on these rules:
 \itemize{
@@ -25,4 +25,9 @@ launch a browser window or cat() the table to console.
 }
 \description{
 This function is called automatically by \code{R} whenever a \code{tinytable} object is anprinted to the console or in an HTML viewer pane.
+}
+\details{
+When printing to HTML in \code{interactive()} mode, a temporary file is created and \code{viewer()} is called to preview the file with the local browser (ex: Firefox or Chrome). The temporary file is then automatically cleaned up. On some operating systems, like some Linux distributions, browser do not have read access to the \verb{/tmp/} directory. In such cases, users can specify a custom location to store temporary HTML files. Note that this prevents \code{tinytable} from automatically cleaning up temporary files automatically.
+
+\code{options(tinytable_tempdir = "/home/username/temp_directory")}
 }

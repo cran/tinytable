@@ -1,206 +1,9 @@
 style_eval_grid <- function(x) {
-  out <- x@data_body
-  sty <- x@style
-
-  if (nrow(sty) == 0) {
-    return(x)
-  }
-
-  sty <- prepare_grid_style(x)
-
-  # styling
-  for (idx in seq_len(nrow(sty))) {
-    row <- sty[idx, "i"]
-    col <- sty[idx, "j"]
-
-    # Handle column names (i = 0)
-    if (row == 0) {
-      current_name <- colnames(x)[col]
-      if (!identical(trimws(current_name), "")) {
-        if (isTRUE(sty[idx, "bold"])) {
-          colnames(x)[col] <- sprintf("**%s**", current_name)
-        }
-        if (isTRUE(sty[idx, "italic"])) {
-          current_name <- colnames(x)[col]
-          colnames(x)[col] <- sprintf("_%s_", current_name)
-        }
-        if (isTRUE(sty[idx, "strikeout"])) {
-          current_name <- colnames(x)[col]
-          colnames(x)[col] <- sprintf("~~%s~~", current_name)
-        }
-      }
-    }
-    # Handle group headers (negative i)
-    else if (row < 0) {
-      if (nrow(x@group_data_j) > 0) {
-        # Convert negative row index to positive index in group_data_j
-        group_row <- abs(row)
-        if (group_row <= nrow(x@group_data_j) && col <= ncol(x@group_data_j)) {
-          current_value <- x@group_data_j[group_row, col]
-          if (!is.na(current_value) && !identical(trimws(current_value), "")) {
-            if (isTRUE(sty[idx, "bold"])) {
-              x@group_data_j[group_row, col] <- sprintf("**%s**", current_value)
-            }
-            if (isTRUE(sty[idx, "italic"])) {
-              current_value <- x@group_data_j[group_row, col]
-              x@group_data_j[group_row, col] <- sprintf("_%s_", current_value)
-            }
-            if (isTRUE(sty[idx, "strikeout"])) {
-              current_value <- x@group_data_j[group_row, col]
-              x@group_data_j[group_row, col] <- sprintf("~~%s~~", current_value)
-            }
-          }
-        }
-      }
-    }
-    # Handle main table body (positive i)
-    else {
-      current_value <- x@data_body[row, col]
-      if (!identical(trimws(current_value), "")) {
-        if (isTRUE(sty[idx, "bold"])) {
-          x@data_body[row, col] <- sprintf("**%s**", current_value)
-        }
-        if (isTRUE(sty[idx, "italic"])) {
-          current_value <- x@data_body[row, col]
-          x@data_body[row, col] <- sprintf("_%s_", current_value)
-        }
-        if (isTRUE(sty[idx, "strikeout"])) {
-          current_value <- x@data_body[row, col]
-          x@data_body[row, col] <- sprintf("~~%s~~", current_value)
-        }
-        if (!is.na(sty[idx, "indent"])) {
-          indent <- sty[idx, "indent"]
-          current_value <- x@data_body[row, col]
-          x@data_body[row, col] <- sprintf("%s%s", strrep(" ", indent), current_value)
-        }
-      }
-    }
-
-    # wipe adjacent cells
-    rowspan <- sty[idx, "rowspan"]
-    colspan <- sty[idx, "colspan"]
-    rowspan <- if (is.na(rowspan)) 1 else rowspan
-    colspan <- if (is.na(colspan)) 1 else colspan
-    wipe <- expand.grid(
-      i = row:(row + rowspan - 1),
-      j = col:(col + colspan - 1)
-    )
-    wipe <- wipe[which(wipe$i != row | wipe$j != col), ]
-    for (idx in seq_len(nrow(wipe))) {
-      x@data_body[wipe$i[idx], wipe$j[idx]] <- ""
-    }
-  }
-
+  # For grid formats, styling is handled inside build_eval_grid
+  # This allows proper ordering of text styles before padding and background after padding
   return(x)
 }
 
-
-grid_colspan <- function(x) {
-  sty <- prepare_grid_style(x)
-
-  if (nrow(sty) == 0 || !is.data.frame(sty)) {
-    return(x)
-  }
-
-  # Check if colspan column exists before accessing it
-  if (!"colspan" %in% colnames(sty)) {
-    return(x)
-  }
-
-  # Find rows with colspan > 1
-  colspan_rows <- sty[!is.na(sty$colspan) & sty$colspan > 1, ]
-
-  if (nrow(colspan_rows) == 0) {
-    return(x)
-  }
-
-  # Get the table string and split into lines
-  table_lines <- strsplit(x@table_string, "\\n")[[1]]
-
-  # Find the header separator line (+=====+) as reference point
-  header_sep_line <- which(grepl("^\\+={2,}", table_lines))
-  if (length(header_sep_line) == 0) {
-    # No header separator found, try to find any separator line starting with +
-    header_sep_line <- which(grepl("^\\+-", table_lines))[1]
-    if (is.na(header_sep_line)) {
-      return(x) # Can't find reference point
-    }
-  } else {
-    header_sep_line <- header_sep_line[1]
-  }
-
-  for (idx in seq_len(nrow(colspan_rows))) {
-    row_idx <- colspan_rows[idx, "i"]
-    col_idx <- colspan_rows[idx, "j"]
-    colspan <- colspan_rows[idx, "colspan"]
-
-    # Calculate target line: header_sep_line + row_idx (rows are consecutive after header separator)
-    target_line <- header_sep_line + row_idx
-
-    if (
-      target_line <= length(table_lines) &&
-        startsWith(table_lines[target_line], "|")
-    ) {
-      line <- table_lines[target_line]
-
-      # Split the line by | to get cells
-      cells <- strsplit(line, "\\|")[[1]]
-
-      # Remove empty first and last elements
-      if (length(cells) > 0 && cells[1] == "") {
-        cells <- cells[-1]
-      }
-      if (length(cells) > 0 && cells[length(cells)] == "") {
-        cells <- cells[-length(cells)]
-      }
-
-      # Remove | markers for the colspan range
-      if (
-        col_idx <= length(cells) && (col_idx + colspan - 1) <= length(cells)
-      ) {
-        # For colspan, use only the content from the first cell (the spanning cell)
-        # and ignore content from subsequent cells that are being spanned over
-        # Preserve leading space but trim trailing spaces
-        spanned_content <- sub(" *$", "", cells[col_idx])
-
-        # Calculate total width for the spanned cells
-        if (
-          !is.null(x@width_cols) &&
-            length(x@width_cols) >= (col_idx + colspan - 1)
-        ) {
-          total_width <- sum(x@width_cols[col_idx:(col_idx + colspan - 1)]) +
-            (colspan - 1)
-          current_width <- nchar(spanned_content)
-          if (current_width < total_width) {
-            padding <- total_width - current_width
-            spanned_content <- paste0(spanned_content, strrep(" ", padding))
-          }
-        }
-
-        # Replace the cells with the spanned content
-        new_cells <- cells
-        new_cells[col_idx] <- spanned_content
-        # Remove the subsequent cells that are part of the colspan
-        if (colspan > 1) {
-          indices_to_remove <- (col_idx + 1):(col_idx + colspan - 1)
-          new_cells <- new_cells[-indices_to_remove]
-        }
-
-        # Reconstruct the line, preserving the original format
-        table_lines[target_line] <- paste0(
-          "|",
-          paste(new_cells, collapse = "|"),
-          "|"
-        )
-      }
-    }
-  }
-
-  # Reconstruct the table string
-  x@table_string <- paste(table_lines, collapse = "\n")
-
-  return(x)
-}
 
 prepare_grid_style <- function(x) {
   sty <- x@style
@@ -216,7 +19,11 @@ prepare_grid_style <- function(x) {
     "bold",
     "italic",
     "strikeout",
+    "underline",
+    "smallcap",
     "indent",
+    "color",
+    "background",
     "colspan",
     "rowspan"
   )]
@@ -224,12 +31,24 @@ prepare_grid_style <- function(x) {
 
   for (idx in seq_along(styrows)) {
     sr <- styrows[[idx]]
+
+    # Check if table has column names (header row exists)
+    has_header <- length(colnames(x)) > 0 && any(nzchar(colnames(x)))
+
     if (is.na(sr$i) && is.na(sr$j)) {
-      cells <- expand.grid(i = seq_len(nrow(x)), j = seq_len(ncol(x)))
+      if (has_header) {
+        cells <- expand.grid(i = c(0, seq_len(nrow(x))), j = seq_len(ncol(x)))
+      } else {
+        cells <- expand.grid(i = seq_len(nrow(x)), j = seq_len(ncol(x)))
+      }
     } else if (is.na(sr$j)) {
       cells <- expand.grid(i = sr$i, j = seq_len(ncol(x)))
     } else if (is.na(sr$i)) {
-      cells <- expand.grid(i = seq_len(nrow(x)), j = sr$j)
+      if (has_header) {
+        cells <- expand.grid(i = c(0, seq_len(nrow(x))), j = sr$j)
+      } else {
+        cells <- expand.grid(i = seq_len(nrow(x)), j = sr$j)
+      }
     } else {
       cells <- sr[, c("i", "j")]
     }
@@ -254,6 +73,294 @@ prepare_grid_style <- function(x) {
   sty <- do.call(rbind, sty)
 
   return(sty)
+}
+
+
+style_grid_group <- function(x) {
+  # Determine the styling function to use based on output type and ANSI setting
+  style_string_grid <- if (isTRUE(x@ansi)) {
+    style_string_ansi
+  } else {
+    style_string_markdown
+  }
+
+  # Apply styling to row groups (group_data_i)
+  if (nrow(x@group_data_i) > 0) {
+    sty <- x@style
+
+    # Find styling that applies to row groups (i = "groupi")
+    group_styles <- sty[sty$i == "groupi" & is.na(sty$j), ]
+
+    if (nrow(group_styles) > 0) {
+      # Apply styling to all row group labels
+      for (row_idx in seq_len(nrow(x@group_data_i))) {
+        for (col_idx in seq_len(ncol(x@group_data_i))) {
+          current_value <- x@group_data_i[row_idx, col_idx]
+          if (!is.na(current_value) && !identical(trimws(current_value), "")) {
+            # Apply the last (most recent) styling for each property
+            for (style_idx in seq_len(nrow(group_styles))) {
+              styles <- list(
+                bold = if (!is.na(group_styles[style_idx, "bold"])) {
+                  group_styles[style_idx, "bold"]
+                } else {
+                  FALSE
+                },
+                italic = if (!is.na(group_styles[style_idx, "italic"])) {
+                  group_styles[style_idx, "italic"]
+                } else {
+                  FALSE
+                },
+                strikeout = if (!is.na(group_styles[style_idx, "strikeout"])) {
+                  group_styles[style_idx, "strikeout"]
+                } else {
+                  FALSE
+                },
+                underline = if (!is.na(group_styles[style_idx, "underline"])) {
+                  group_styles[style_idx, "underline"]
+                } else {
+                  FALSE
+                },
+                smallcap = if (!is.na(group_styles[style_idx, "smallcap"])) {
+                  group_styles[style_idx, "smallcap"]
+                } else {
+                  FALSE
+                },
+                color = if (!is.na(group_styles[style_idx, "color"])) {
+                  group_styles[style_idx, "color"]
+                } else {
+                  NULL
+                },
+                background = if (
+                  !is.na(group_styles[style_idx, "background"])
+                ) {
+                  group_styles[style_idx, "background"]
+                } else {
+                  NULL
+                })
+              x@group_data_i[row_idx, col_idx] <- style_string_grid(
+                current_value,
+                styles
+              )
+              current_value <- x@group_data_i[row_idx, col_idx]
+            }
+          }
+        }
+      }
+    }
+  }
+
+  # Apply styling to column groups (group_data_j) - this is already handled in style_grid_body
+  # but we can add explicit handling here if needed
+  if (nrow(x@group_data_j) > 0) {
+    sty <- x@style
+
+    # Find styling that applies to column groups (i = "groupj")
+    group_styles <- sty[sty$i == "groupj" & is.na(sty$j), ]
+
+    if (nrow(group_styles) > 0) {
+      # Apply styling to all column group labels
+      for (row_idx in seq_len(nrow(x@group_data_j))) {
+        for (col_idx in seq_len(ncol(x@group_data_j))) {
+          current_value <- x@group_data_j[row_idx, col_idx]
+          if (!is.na(current_value) && !identical(trimws(current_value), "")) {
+            # Apply the last (most recent) styling for each property
+            for (style_idx in seq_len(nrow(group_styles))) {
+              styles <- list(
+                bold = if (!is.na(group_styles[style_idx, "bold"])) {
+                  group_styles[style_idx, "bold"]
+                } else {
+                  FALSE
+                },
+                italic = if (!is.na(group_styles[style_idx, "italic"])) {
+                  group_styles[style_idx, "italic"]
+                } else {
+                  FALSE
+                },
+                strikeout = if (!is.na(group_styles[style_idx, "strikeout"])) {
+                  group_styles[style_idx, "strikeout"]
+                } else {
+                  FALSE
+                },
+                underline = if (!is.na(group_styles[style_idx, "underline"])) {
+                  group_styles[style_idx, "underline"]
+                } else {
+                  FALSE
+                },
+                smallcap = if (!is.na(group_styles[style_idx, "smallcap"])) {
+                  group_styles[style_idx, "smallcap"]
+                } else {
+                  FALSE
+                },
+                color = if (!is.na(group_styles[style_idx, "color"])) {
+                  group_styles[style_idx, "color"]
+                } else {
+                  NULL
+                },
+                background = if (
+                  !is.na(group_styles[style_idx, "background"])
+                ) {
+                  group_styles[style_idx, "background"]
+                } else {
+                  NULL
+                })
+              x@group_data_j[row_idx, col_idx] <- style_string_grid(
+                current_value,
+                styles
+              )
+              current_value <- x@group_data_j[row_idx, col_idx]
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return(x)
+}
+
+
+#' Apply text styling to table data before padding
+#' @keywords internal
+#' @noRd
+style_grid_body <- function(x) {
+  sty <- prepare_grid_style(x)
+
+  if (nrow(sty) == 0) {
+    return(x)
+  }
+
+  # Determine the styling function to use based on output type and ANSI setting
+  style_string_grid <- if (isTRUE(x@ansi)) {
+    style_string_ansi
+  } else {
+    style_string_markdown
+  }
+
+  # Apply text styling to each cell (excluding background)
+  for (idx in seq_len(nrow(sty))) {
+    row <- sty[idx, "i"]
+    col <- sty[idx, "j"]
+
+    # when calling subset(select -x) we can have too many columns in @style
+    if (col > length(names(x))) next
+
+    # Prepare styles list for the current cell
+    styles <- list(
+      bold = isTRUE(sty[idx, "bold"]),
+      italic = isTRUE(sty[idx, "italic"]),
+      strikeout = isTRUE(sty[idx, "strikeout"]),
+      underline = isTRUE(sty[idx, "underline"]),
+      smallcap = isTRUE(sty[idx, "smallcap"]),
+      color = if (!is.na(sty[idx, "color"])) sty[idx, "color"] else NULL,
+      indent = if (!is.na(sty[idx, "indent"])) sty[idx, "indent"] else NULL
+    )
+
+    # Handle column names (i = 0)
+    if (row == 0) {
+      current_name <- colnames(x)[col]
+      if (!identical(trimws(current_name), "")) {
+        tmp <- style_string_grid(current_name, styles)
+        colnames(x)[col] <- tmp
+      }
+    } else if (row < 0) {
+      # Handle group headers (negative i)
+      if (nrow(x@group_data_j) > 0) {
+        # Convert negative row index to positive index in group_data_j
+        group_row <- abs(row)
+        if (group_row <= nrow(x@group_data_j) && col <= ncol(x@group_data_j)) {
+          current_value <- x@group_data_j[group_row, col]
+          if (!is.na(current_value) && !identical(trimws(current_value), "")) {
+            x@group_data_j[group_row, col] <- style_string_grid(
+              current_value,
+              styles
+            )
+          }
+        }
+      }
+    } else {
+      # Handle main table body (positive i)
+      current_value <- x@data_body[row, col]
+      if (!identical(trimws(current_value), "")) {
+        x@data_body[row, col] <- style_string_grid(current_value, styles)
+      }
+    }
+
+    # wipe adjacent cells for colspan/rowspan
+    rowspan <- sty[idx, "rowspan"]
+    colspan <- sty[idx, "colspan"]
+    rowspan <- if (is.na(rowspan)) 1 else rowspan
+    colspan <- if (is.na(colspan)) 1 else colspan
+    wipe <- expand.grid(
+      i = row:(row + rowspan - 1),
+      j = col:(col + colspan - 1)
+    )
+    wipe <- wipe[
+      !(wipe$i == row & wipe$j == col) &
+        wipe$i >= 1 &
+        wipe$i <= nrow(x@data_body) &
+        wipe$j >= 1 &
+        wipe$j <= ncol(x@data_body),
+    ]
+    if (nrow(wipe) > 0) {
+      for (idx_wipe in seq_len(nrow(wipe))) {
+        x@data_body[wipe$i[idx_wipe], wipe$j[idx_wipe]] <- ""
+      }
+    }
+  }
+
+  return(x)
+}
+
+
+#' Apply background styling to padded table matrix
+#' @keywords internal
+#' @noRd
+style_grid_body_background <- function(tab, x, header) {
+  sty <- prepare_grid_style(x)
+
+  if (nrow(sty) == 0) {
+    return(tab)
+  }
+
+  # Determine the styling function to use based on output type and ANSI setting
+  style_string_grid <- if (isTRUE(x@ansi)) {
+    style_string_ansi
+  } else {
+    style_string_markdown
+  }
+
+  # Apply only background styling to each cell
+  for (idx in seq_len(nrow(sty))) {
+    # Skip if no background styling
+    if (is.na(sty[idx, "background"])) {
+      next
+    }
+
+    row <- sty[idx, "i"]
+    col <- sty[idx, "j"]
+
+    # Prepare styles list with only background
+    styles <- list(background = sty[idx, "background"])
+
+    # Handle column names (i = 0)
+    if (row == 0 && header) {
+      tab_row <- 1 # Header is first row in tab matrix
+      if (tab_row <= nrow(tab) && col <= ncol(tab)) {
+        current_content <- tab[tab_row, col]
+        tab[tab_row, col] <- style_string_grid(current_content, styles)
+      }
+    } else if (row > 0) {
+      # Handle main table body (positive i)
+      tab_row <- if (header) row + 1 else row # Adjust for header row
+      if (tab_row <= nrow(tab) && col <= ncol(tab)) {
+        current_content <- tab[tab_row, col]
+        tab[tab_row, col] <- style_string_grid(current_content, styles)
+      }
+    }
+    # Handle group headers would go here if needed (negative i)
+  }
+
+  return(tab)
 }
 
 

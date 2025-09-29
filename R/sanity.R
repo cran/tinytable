@@ -127,41 +127,42 @@ sanitize_j <- function(j, x, skip_tabulator_types = FALSE) {
   return(out)
 }
 
-sanitize_output <- function(output) {
+sanitize_output <- function(x, output) {
+  if (is.null(x)) {
+    stop("'x' cannot be NULL", call. = FALSE)
+  }
+  if (is.null(output)) {
+    return(x)
+  }
+  
   assert_choice(
     output,
     choice = c(
-      "tinytable",
-      "markdown",
       "latex",
       "html",
       "typst",
       "dataframe",
-      "gfm",
-      "tabulator",
-      "bootstrap"
-    ),
-    null.ok = TRUE
+      "markdown"
+    )
   )
+  
+  x@output <- output
+  return(x)
+}
 
-  # default output format
-  if (is.null(output) || isTRUE(output == "tinytable")) {
-    has_viewer <- interactive() && !is.null(getOption("viewer"))
-    if (has_viewer) {
-      output <- "tabulator"
-    } else {
-      out <- "markdown"
-    }
-    out <- if (has_viewer) "html" else "markdown"
-  } else if (output == "html") {
-    # When user explicitly asks for "html", check global option for engine
-    tinytable_html_engine <- getOption("tinytable_html_engine", default = "bootstrap")
-    assert_choice(tinytable_html_engine, choice = c("tabulator", "bootstrap"))
-    out <- if (tinytable_html_engine == "tabulator") "tabulator" else "bootstrap"
+infer_output <- function(x) {
+  output <- x@output
+  
+  # If output is already set to a specific format, respect it
+  if (!is.null(output) && !identical(output, "tinytable")) {
+    return(output)
   } else {
-    out <- output
+    # Only do inference when output is NULL or "tinytable"
+    has_viewer <- interactive() && !is.null(getOption("viewer"))
+    out <- if (has_viewer) "html" else "markdown"
   }
 
+  # Environmental overrides only apply when we're doing inference (not explicit output)
   if (isTRUE(check_dependency("litedown"))) {
     fmt <- tryCatch(litedown::get_context("format"), error = function(e) NULL)
     if (identical(fmt, "latex")) {
@@ -176,9 +177,10 @@ sanitize_output <- function(output) {
   }
 
   if (isTRUE(check_dependency("knitr"))) {
-    if (isTRUE(knitr::pandoc_to() %in% c("latex", "beamer"))) {
-      flag <- getOption("tinytable_latex_preamble", default = TRUE)
-      if (isTRUE(flag)) {
+
+    pandoc_to <- knitr::pandoc_to()
+    if (isTRUE(pandoc_to %in% c("latex", "beamer"))) {
+      if (isTRUE(x@latex_preamble)) {
         usepackage_latex("float")
         usepackage_latex(
           "tabularray",
@@ -186,7 +188,6 @@ sanitize_output <- function(output) {
             "\\usepackage[normalem]{ulem}",
             "\\usepackage{graphicx}",
             "\\usepackage{rotating}",
-            "\\UseTblrLibrary{booktabs}",
             "\\UseTblrLibrary{siunitx}",
             "\\NewTableCommand{\\tinytableDefineColor}[3]{\\definecolor{#1}{#2}{#3}}",
             "\\newcommand{\\tinytableTabularrayUnderline}[1]{\\underline{#1}}",
@@ -194,30 +195,23 @@ sanitize_output <- function(output) {
           )
         )
       }
-      if (is.null(output)) out <- "latex"
-    } else if (isTRUE(knitr::pandoc_to() %in% c("html", "revealjs"))) {
-      if (is.null(output)) {
-        # Check global HTML engine preference for notebooks
-        html_framework <- getOption("tinytable_html_engine", default = "bootstrap")
-        out <- if (html_framework == "tabulator") "tabulator" else "bootstrap"
-      }
-    } else if (isTRUE(knitr::pandoc_to() == "typst")) {
-      if (is.null(output)) {
-        out <- "typst"
-      }
+      out <- "latex"
+    } else if (isTRUE(pandoc_to %in% c("html", "revealjs"))) {
+      out <- "html"
+    } else if (isTRUE(pandoc_to == "typst")) {
+      out <- "typst"
       if (isTRUE(check_dependency("quarto"))) {
         if (isTRUE(quarto::quarto_version() < "1.5.29")) {
           msg <- "Typst tables require version 1.5.29 or later of Quarto and version 0.11.0 or later of Typst. This software may (or may not) only be available in pre-release builds: https://quarto.org/docs/download"
           stop(msg, call. = FALSE)
         }
       }
-    } else if (isTRUE(knitr::pandoc_to() == "docx")) {
-      if (is.null(output)) out <- "markdown"
-    } else {
-      if (is.null(output)) out <- "markdown"
+    # docx, markdown variants, and unknown formats
+    } else if (!is.null(pandoc_to)) {
+      out <- "markdown"
     }
   }
-
+  
   return(out)
 }
 
@@ -262,12 +256,16 @@ assert_choice <- function(
   stop(msg, call. = FALSE)
 }
 
-check_string <- function(x, null.ok = FALSE) {
+check_string <- function(x, null.ok = FALSE, len = NULL) {
   if (is.null(x) && isTRUE(null.ok)) {
     return(invisible(TRUE))
   }
   if (is.character(x) && length(x) == 1) {
-    return(invisible(TRUE))
+    if (is.null(len)) {
+      return(invisible(TRUE))
+    } else if (nchar(x) == len) {
+      return(invisible(TRUE))
+    }
   }
   return(FALSE)
 }
@@ -275,10 +273,18 @@ check_string <- function(x, null.ok = FALSE) {
 assert_string <- function(
   x,
   null.ok = FALSE,
-  name = as.character(substitute(x))
-) {
-  msg <- sprintf("`%s` must be a string.", name)
-  if (!isTRUE(check_string(x, null.ok = null.ok))) {
+  len = NULL,
+  name = as.character(substitute(x))) {
+  if (is.null(len)) {
+    msg <- sprintf("`%s` must be a string.", name)
+  } else {
+    msg <- sprintf("`%s` must be a string of length %s.", name, len)
+  }
+  if (!isTRUE(check_string(x, len = len, null.ok = null.ok))) {
+    stop(msg, call. = FALSE)
+  }
+  if (!is.null(x) && !is.null(len) && nchar(x) != len) {
+    msg <- sprintf("`%s` must be a string of length %s.", name, len)
     stop(msg, call. = FALSE)
   }
 }
@@ -669,6 +675,17 @@ check_atomic_vector <- function(
     out <- sprintf("`%s` must be an atomic vector.", name)
   }
   return(out)
+}
+
+assert_atomic_vector <- function(x, 
+                                 null.ok = FALSE, 
+                                 name = as.character(substitute(x))) {
+  flag <- check_atomic_vector(x, null.ok = null.ok, name = name)
+  if (!isTRUE(flag)) {
+    stop(flag, call. = FALSE)
+  } else {
+    return(invisible(TRUE))
+  }
 }
 
 assert_class <- function(x, classname) {
