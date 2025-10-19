@@ -1,5 +1,31 @@
 # News
 
+## 0.15.0
+
+New features:
+
+* `style_tt()` now supports comprehensive styling for Tabulator tables including bold, italic, color, background, fontsize, and more. Cell-specific styles persist across sorting and pagination operations.
+* `theme_html(tabulator_search = "column")` adds header filters to each column in Tabulator tables, allowing per-column searching.
+* `theme_striped()` now supports Tabulator tables with alternating row background colors.
+* `plot_tt()` now supports Tabulator tables with JavaScript-based rendering for built-in plot types (`bar`, `barpct`, `histogram`, `line`, `density`).
+* `plot_tt()` now supports images in Tabulator tables via the `images` parameter.
+* `theme_html(tabulator_css_rule = ...)` now appends CSS rules instead of overwriting them, allowing multiple calls to combine styles.
+* `plot_tt()` bar plots now accept `color` as a length-2 vector (`c(bar_color, background_color)`) to show progress bars with backgrounds in static formats (PNG, PDF, LaTeX). Use `xlim` to control the range. Note: Tabulator format uses only the first color.
+* `theme_html(script = ...)` allows users to inject custom JavaScript code or script tags into HTML output. Useful for loading external JavaScript libraries like Plotly, D3, etc.
+
+Changes:
+
+* `plot_tt(fun = "barpct")` is deprecated but still supported for backward compatibility. Use `fun = "bar"` with `xlim = c(0, 1)` and a two-color vector instead.
+
+Internal changes:
+
+* Refactored `style_tt()` logical parameter handling: defaults changed from `FALSE` to `NULL`, with `NULL` values stored as `NA` in the style dataframe. Simplified `expand_style()` to use consistent "last non-NA wins" logic for all style properties including logical ones.
+
+Bugs:
+
+* Issue in Typst when calling `style_tt()` with both a `rowspan` and a `line`. Thanks to @eringrand for reporting Issue #592.
+* `group_tt(j = "_")` (and other single-character delimiters) now errors when column names contain differing numbers of delimiters, preventing malformed spanning headers.
+
 ## 0.14.0
 
 Breaking changes:

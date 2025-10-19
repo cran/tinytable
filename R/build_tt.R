@@ -96,10 +96,6 @@ build_tt <- function(x, output = NULL) {
   # insert group rows into body
   x <- rbind_body_groupi(x)
 
-  # apply theme_*() before style_tt()
-  lazy_style <- x@lazy_style
-  x@lazy_style <- list()
-
   # pre-process: theme_*() calls that need formatting conditional on @output
   # this is useful after rbind() because we now have the final indices and headers
   for (p in x@lazy_prepare) {
@@ -109,10 +105,40 @@ build_tt <- function(x, output = NULL) {
     }
   }
 
-  # apply theme_*() before style_tt()
-  x@lazy_style <- c(x@lazy_style, lazy_style)
+  # plots and images
+  for (l in x@lazy_plot) {
+    l[["x"]] <- x
+    x <- eval(l)
+  }
 
-  for (p in x@lazy_style) {
+  # add footnote markers just after formatting, otherwise appending converts to string
+  x <- footnote_markers(x)
+
+  # Create rectangular style dataframe with one row per cell
+  # This happens after row group operations so we have the final row structure
+  iseq <- seq_len(nrow(x))
+  iseq <- c(-1 * 0:(x@nhead - 1), iseq)  # include headers
+  jseq <- seq_len(ncol(x))
+  rect <- expand.grid(i = iseq, j = jseq)
+
+  # Initialize all style columns with NA
+  style_cols <- c(
+    "bold", "italic", "underline", "strikeout", "monospace", "smallcap",
+    "align", "alignv", "color", "background", "fontsize", "indent",
+    "html_css", "colspan", "rowspan"
+  )
+
+  for (col in style_cols) {
+    rect[[col]] <- NA
+  }
+
+  x@style_other <- rect
+
+  # apply style_tt() and theme_*() after all group operations
+  lazy_style <- x@lazy_style
+  x@lazy_style <- list()
+
+  for (p in lazy_style) {
     p[["x"]] <- x
     x <- eval(p)
   }
@@ -130,14 +156,21 @@ build_tt <- function(x, output = NULL) {
   x <- style_notes(x)
   x <- style_caption(x)
 
-  # plots and images
-  for (l in x@lazy_plot) {
-    l[["x"]] <- x
-    x <- eval(l)
+  # Populate @style_other and @style_lines by applying each entry from @style sequentially
+  # This must happen before build_eval() for backends (like Grid) that apply styles during build
+  x@style_lines <- data.frame()  # Initialize empty line dataframe
+
+  for (idx in seq_len(nrow(x@style))) {
+    style_row <- x@style[idx, , drop = FALSE]
+    # Apply non-line styles (overwrites)
+    x@style_other <- apply_style_to_rect(x@style_other, style_row)
+    # Apply line styles (appends)
+    x@style_lines <- append_lines_to_rect(x@style_lines, style_row, rect)
   }
 
-  # add footnote markers just after formatting, otherwise appending converts to string
-  x <- footnote_markers(x)
+  # Sort style_other for consistent ordering (j first, then i within each j)
+  # This ensures test snapshots are deterministic
+  x@style_other <- x@style_other[order(x@style_other$j, x@style_other$i), ]
 
   # draw the table
   x <- build_eval(x)

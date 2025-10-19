@@ -12,6 +12,7 @@ theme_html(
   class = get_option("tinytable_html_class", default = NULL),
   css = get_option("tinytable_html_css", default = NULL),
   css_rule = get_option("tinytable_html_css_rule", default = NULL),
+  script = get_option("tinytable_html_script", default = NULL),
   portable = get_option("tinytable_html_portable"),
   tabulator_columns = get_option("tinytable_html_tabulator_columns"),
   tabulator_css_rule = get_option("tinytable_html_tabulator_css_rule"),
@@ -39,6 +40,8 @@ theme_html(
 
 \item{css_rule}{String. Complete CSS rules.}
 
+\item{script}{String. Custom JavaScript code or script tags to inject into the HTML output. Useful for loading external JavaScript libraries like Plotly, D3, etc.}
+
 \item{portable}{Logical. Sets whether to create portable HTML output with embedded Javascript, CSS, and base64-encoded images.}
 
 \item{tabulator_columns}{Custom column definitions.}
@@ -64,6 +67,7 @@ Default is "fitDataTable". Available options: "fitDataTable", "fitData", "fitDat
 \item NULL (default): Preserves existing search settings, does not change previous configuration
 \item "top": Adds search box above the table
 \item "bottom": Adds search box below the table
+\item "column": Adds header filters to each column for per-column searching
 }}
 
 \item{tabulator_stylesheet}{Character string. CSS stylesheet theme for Tabulator.js tables.
@@ -75,4 +79,17 @@ Default is "bootstrap5". Available options: "default", "simple", "midnight", "mo
 }
 \description{
 HTML-specific styles and options
+}
+\examples{
+\dontrun{
+# Load an external JavaScript library
+library(tinytable)
+x <- tt(mtcars[1:5, 1:5])
+x <- theme_html(x, script = '<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>')
+
+# Add custom inline JavaScript
+x <- tt(mtcars[1:5, 1:5])
+x <- theme_html(x, script = '<script>console.log("Table loaded");</script>')
+}
+
 }

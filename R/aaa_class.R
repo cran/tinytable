@@ -18,6 +18,7 @@ setClass(
     body = "character",
     html_class = "character",
     html_css_rule = "NULLorCharacter",
+    html_script = "NULLorCharacter",
     caption = "NULLorCharacter",
     css = "data.frame",
     data = "data.frame",
@@ -51,6 +52,8 @@ setClass(
     latex_preamble = "logical",
     latex_engine = "character",
     style = "data.frame",
+    style_other = "data.frame",
+    style_lines = "data.frame",
     style_caption = "list",
     style_notes = "list",
     table_string = "character",
@@ -62,6 +65,7 @@ setClass(
     tabulator_columns = "list",
     tabulator_css_rule = "character",
     tabulator_options = "character",
+    tabulator_post_init = "character",
     tabulator_search = "NULLorCharacter",
     tabulator_stylesheet = "character",
     theme = "list",
@@ -101,6 +105,7 @@ setMethod(
 
     # Default to NULL - framework CSS will be loaded externally
     .Object@html_css_rule <- NULL
+    .Object@html_script <- NULL
 
     # dynamic
     .Object@nrow <- nrow(.Object@data)
@@ -149,6 +154,8 @@ setMethod(
     .Object@output <- "tinytable"
     .Object@output_dir <- getwd()
     .Object@style <- data.frame()
+    .Object@style_other <- data.frame()
+    .Object@style_lines <- data.frame()
     .Object@tabularray_inner <- character()
     .Object@tabularray_outer <- character()
     .Object@tabulator_column_formatters <- list()
@@ -157,6 +164,7 @@ setMethod(
     .Object@tabulator_css_rule <- ""
     .Object@tabulator_format_bool <- FALSE
     .Object@tabulator_options <- ""
+    .Object@tabulator_post_init <- ""
     .Object@tabulator_search <- NULL
     .Object@tabulator_stylesheet <- ""
 

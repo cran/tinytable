@@ -11,14 +11,13 @@
 #' @param height Numeric, the height of the images in the table in em units.
 #' @param height_plot Numeric, the height of generated plot images in pixels (default: 400).
 #' @param width_plot Numeric, the width of generated plot images in pixels (default: 1200).
-#' @param color string Name of color to use for inline plots (passed to the `col` argument base `graphics` plots in `R`).
-#' @param xlim Numeric vector of length 2.
+#' @param color string Name of color to use for inline plots (passed to the `col` argument base `graphics` plots in `R`). For bar plots in static output formats (PNG, PDF, etc.), can be a vector of length 2: c(bar_color, background_color) to show progress against a maximum. Note: Tabulator format only uses the first color.
+#' @param xlim Numeric vector of length 2. Controls the range of bar plots.
 #' @param fun  String or function to generate inline plots.
 #' - Built-in plot types (strings):
 #'   - `"histogram"`: Creates histograms from numeric vectors. Accepts `color` argument.
 #'   - `"density"`: Creates density plots from numeric vectors. Accepts `color` argument.
-#'   - `"bar"`: Creates horizontal bar charts from single numeric values. Accepts `color` and `xlim` arguments.
-#'   - `"barpct"`: Creates horizontal percentage bar charts from single numeric values between 0 and 1. Accepts `color` and `background` arguments.
+#'   - `"bar"`: Creates horizontal bar charts from single numeric values. Accepts `color` (single value, or length-2 vector for bar and background colors in static formats) and `xlim` arguments.
 #'   - `"line"`: Creates line plots from data frames with `x` and `y` columns. Accepts `color` and `xlim` arguments.
 #' - Custom functions:
 #'   - Functions that return `ggplot2` objects.
@@ -37,6 +36,18 @@
 #'
 #' @examples
 #' \dontrun{
+#' # Bar plots with single and dual colors
+#' dat <- data.frame(
+#'   Metric = c("Sales", "Conversion", "Growth", "Efficiency"),
+#'   Value = c(75, 45, 92, 38),
+#'   Percentage = c(0.75, 0.45, 0.92, 0.38)
+#' )
+#'
+#' tt(dat) |>
+#'   plot_tt(j = 2, fun = "bar", data = as.list(dat$Value), color = "darkorange") |>
+#'   plot_tt(j = 3, fun = "bar", data = as.list(dat$Percentage),
+#'           color = c("steelblue", "lightgrey"), xlim = c(0, 1))
+#'
 #' # Built-in plot types
 #' plot_data <- list(mtcars$mpg, mtcars$hp, mtcars$qsec)
 #'
@@ -44,24 +55,17 @@
 #'   Variables = c("mpg", "hp", "qsec"),
 #'   Histogram = "",
 #'   Density = "",
-#'   Bar = "",
-#'   BarPct = "",
 #'   Line = ""
 #' )
 #'
 #' # Random data for sparklines
 #' lines <- lapply(1:3, \(x) data.frame(x = 1:10, y = rnorm(10)))
 #'
-#' # Percentage data (values between 0 and 1)
-#' pct_data <- list(0.65, 0.82, 0.41)
-#'
 #' tt(dat) |>
 #'   plot_tt(j = 2, fun = "histogram", data = plot_data) |>
 #'   plot_tt(j = 3, fun = "density", data = plot_data, color = "darkgreen") |>
-#'   plot_tt(j = 4, fun = "bar", data = list(2, 3, 6), color = "orange") |>
-#'   plot_tt(j = 5, fun = "barpct", data = pct_data, color = "steelblue") |>
-#'   plot_tt(j = 6, fun = "line", data = lines, color = "blue") |>
-#'   style_tt(j = 2:6, align = "c")
+#'   plot_tt(j = 4, fun = "line", data = lines, color = "blue") |>
+#'   style_tt(j = 2:4, align = "c")
 #'
 #' # Custom function example (must have ... argument)
 #' custom_hist <- function(d, ...) {
@@ -152,10 +156,13 @@ plot_tt <- function(
         stop("Data for 'barpct' must be between 0 and 1 (percentages).", call. = FALSE)
       }
     }
-    if (is.null(xlim)) {
-      xlim <- c(0, 1)
+    # Always set xlim to c(0, 1) for barpct
+    xlim <- c(0, 1)
+    # Default to lightgrey background if color is single value
+    if (length(color) == 1) {
+      color <- c(color, "lightgrey")
     }
-    fun <- rep(list(tiny_barpct), length(data))
+    fun <- rep(list(tiny_bar), length(data))
   } else {
     fun <- rep(list(fun), length(data))
   }
@@ -202,6 +209,21 @@ plot_tt_lazy <- function(
     ...) {
   out <- x@data_body
 
+  # Handle Tabulator plots with JavaScript formatters
+  # Note: images use the standard HTML path below, which works for tabulator too
+  is_tabulator <- isTRUE(x@output == "html" && x@html_engine == "tabulator")
+  if (is_tabulator && !is.null(data)) {
+    result <- plot_tt_tabulator(
+      x, i = i, j = j, fun = fun, data = data,
+      color = color, xlim = xlim, ...
+    )
+    # If plot_tt_tabulator returns NULL, it means we should fall back to PNG rendering
+    # (e.g., for custom functions). Otherwise, return the result.
+    if (!is.null(result)) {
+      return(result)
+    }
+    # Fall through to PNG rendering below
+  }
 
   is_html <- isTRUE(x@output %in% c("html", "bootstrap", "tabulator"))
   is_quarto <- isTRUE(check_dependency("knitr")) && !is.null(knitr::pandoc_to())
@@ -236,9 +258,17 @@ plot_tt_lazy <- function(
       dir.create(path_assets)
     }
 
+    # Rank hack: prepend zero-padded rank to filename to allow sorting based on
+    # file names in interactive tables like tabulator
+    last_values <- sapply(data, plot_data_rank)
+    ranks <- rank(last_values, ties.method = "first")
+    n_digits <- nchar(as.character(length(data)))
+    zero_padded_ranks <- sprintf(paste0("%0", n_digits, "d"), ranks)
+
     for (idx in seq_along(data)) {
-      fn <- paste0(get_id(), ".png")
+      fn <- paste0("tinytable_", zero_padded_ranks[idx], "_", get_id(), ".png")
       fn_full <- file.path(path_assets, fn)
+      fn_full <- normalizePath(fn_full, mustWork = FALSE)
       if (is_portable) {
         # For portable HTML, store the full path for base64 encoding
         images[idx] <- fn_full
@@ -254,6 +284,7 @@ plot_tt_lazy <- function(
           call. = FALSE
         )
       }
+
       p <- plot_fun(data[[idx]], xlim = xlim, color = color, ...)
 
       # ggplot2
@@ -365,16 +396,60 @@ plot_tt_lazy <- function(
   x@data_body <- out
 
   # Mark columns with HTML content for HTML formatter in Tabulator
+  # For custom functions with PNG images, also add rank fields for sorting
   if (isTRUE(x@html_engine == "tabulator")) {
+    # Handle the case where i is NA (from sanitize_i when i was NULL)
+    if (all(is.na(i)) && isTRUE(attr(i, "null"))) {
+      i_body <- attr(i, "body")
+    } else {
+      i_body <- i
+    }
+
     for (col_idx in j) {
       col_name <- x@names[col_idx]
       if (!is.null(col_name) && !(col_name %in% names(x@tabulator_column_formatters))) {
         x@tabulator_column_formatters[[col_name]] <- list(formatter = "html")
+
+        # Add rank fields for sorting (custom functions use PNG, but still need sorting)
+        if (!is.null(data)) {
+          rank_col_name <- paste0("rank_", col_name)
+
+          # Get data for this column
+          col_data_idx <- 1
+          if (length(j) > 1) {
+            col_data_idx <- which(j == col_idx)
+          }
+
+          for (row_idx in seq_along(i_body)) {
+            data_idx <- (col_data_idx - 1) * length(i_body) + row_idx
+            plot_data <- data[[data_idx]]
+            sort_value <- plot_data_rank(plot_data)
+            x@data_body[i_body[row_idx], rank_col_name] <- sort_value
+          }
+
+          # Configure sorter to use rank field
+          x@tabulator_column_formatters[[col_name]]$sorter <- "tinytable_rank_sorter"
+          x@tabulator_column_formatters[[col_name]]$sorterParams <- list(rankField = rank_col_name)
+        }
       }
     }
   }
 
   return(x)
+}
+
+plot_data_rank <- function(x) {
+  if (is.list(x) || is.data.frame(x)) {
+    if (is.data.frame(x) && "y" %in% names(x)) {
+      utils::tail(x$y, n = 1)
+    } else if (is.list(x)) {
+      utils::tail(unlist(x), n = 1)
+    } else {
+      utils::tail(x, n = 1)
+    }
+  } else {
+    utils::tail(x, n = 1)
+  }
 }
 
 tiny_histogram <- function(d, color = "black", ...) {
@@ -389,37 +464,32 @@ tiny_density <- function(d, color = "black", ...) {
   }
 }
 
-tiny_barpct <- function(
-    d,
-    color = "black",
-    background = "lightgrey",
-    xlim = c(0, 1),
-    ...) {
-  function() {
-    stopifnot(is.numeric(d), all(d >= 0 & d <= 1, na.rm = TRUE))
-
-    color <- standardize_colors(color)
-    bg_col <- standardize_colors(background)
-
-    comp <- 1 - d
-    mat <- rbind(d, comp)
-
-    graphics::barplot(
-      mat,
-      horiz  = TRUE,
-      col    = c(color, bg_col),
-      xlim   = xlim,
-      space  = 0,
-      beside = FALSE,
-      axes   = FALSE,
-      ...
-    )
-  }
-}
-
 tiny_bar <- function(d, color = "black", xlim = 0:1, ...) {
   function() {
-    graphics::barplot(d, horiz = TRUE, col = color, xlim = xlim)
+    if (length(color) == 2) {
+      # Two colors: stacked bar with background
+      bar_col <- standardize_colors(color[1])
+      bg_col <- standardize_colors(color[2])
+
+      # Calculate the remaining portion based on xlim
+      max_val <- xlim[2]
+      comp <- max_val - d
+      mat <- rbind(d, comp)
+
+      graphics::barplot(
+        mat,
+        horiz  = TRUE,
+        col    = c(bar_col, bg_col),
+        xlim   = xlim,
+        space  = 0,
+        beside = FALSE,
+        axes   = FALSE,
+        ...
+      )
+    } else {
+      # Single color: simple bar without background
+      graphics::barplot(d, horiz = TRUE, col = color, xlim = xlim)
+    }
   }
 }
 
@@ -447,4 +517,123 @@ encode <- function(images) {
 
   encoded <- sapply(images, base64enc::base64encode)
   base::sprintf("data:image/%s;base64, %s", ext, encoded)
+}
+
+
+#' Handle plot_tt for Tabulator tables
+#' @keywords internal
+#' @noRd
+plot_tt_tabulator <- function(
+    x,
+    i = NULL,
+    j = NULL,
+    fun = NULL,
+    data = NULL,
+    color = "black",
+    xlim = NULL,
+    ...) {
+
+  # Determine plot type from fun
+  plot_type <- NULL
+  if (is.list(fun) && length(fun) > 0) {
+    # Extract plot type from function name
+    fun_obj <- fun[[1]]
+    if (identical(fun_obj, tiny_histogram)) {
+      plot_type <- "histogram"
+    } else if (identical(fun_obj, tiny_density)) {
+      plot_type <- "density"
+    } else if (identical(fun_obj, tiny_bar)) {
+      plot_type <- "bar"
+    } else if (identical(fun_obj, tiny_line)) {
+      plot_type <- "line"
+    }
+  }
+
+  if (is.null(plot_type)) {
+    # For custom functions, we cannot use JavaScript formatters
+    # Signal to continue with standard PNG rendering by returning NULL
+    # This will cause plot_tt_lazy to skip the tabulator path and use PNG
+    return(NULL)
+  }
+
+  # Handle the case where i is NA (from sanitize_i when i was NULL)
+  if (all(is.na(i)) && isTRUE(attr(i, "null"))) {
+    # Use the body rows from the attributes
+    i_body <- attr(i, "body")
+  } else {
+    i_body <- i
+  }
+
+  # Track which custom JS has been marked as needed
+  needs_histogram <- FALSE
+  needs_sparkline <- FALSE
+
+  # Process each column
+  for (col_idx in j) {
+    col_name <- x@names[col_idx]
+
+    # Get data for this column
+    col_data_idx <- 1
+    if (length(j) > 1) {
+      col_data_idx <- which(j == col_idx)
+    }
+
+    for (row_idx in seq_along(i_body)) {
+      data_idx <- (col_data_idx - 1) * length(i_body) + row_idx
+      plot_data <- data[[data_idx]]
+
+      # Create formatter configuration
+      formatter_info <- tabulator_plot_formatter(
+        plot_type = plot_type,
+        data = plot_data,
+        color = color,
+        xlim = xlim
+      )
+
+      # Calculate sort value for this data
+      sort_value <- plot_data_rank(plot_data)
+
+      # Store the formatted data in the cell
+      if (plot_type %in% c("line", "density", "histogram")) {
+        # For sparkline and histogram, store as JSON array string
+        json_array <- paste0("[", paste(formatter_info$data, collapse = ","), "]")
+        x@data_body[i_body[row_idx], col_idx] <- json_array
+      } else {
+        # For progress/bar, store the numeric value
+        x@data_body[i_body[row_idx], col_idx] <- formatter_info$data
+      }
+
+      # Store rank value in a hidden column for sorting
+      # Don't use leading underscore as R converts it to X_rank_
+      rank_col_name <- paste0("rank_", col_name)
+      x@data_body[i_body[row_idx], rank_col_name] <- sort_value
+
+      # Store the formatter configuration in tabulator_column_formatters (once per column)
+      if (is.null(x@tabulator_column_formatters[[col_name]])) {
+        # Configure column to sort by the hidden rank field using custom sorter
+        formatter_info$config$sorter <- "tinytable_rank_sorter"
+        formatter_info$config$sorterParams <- list(rankField = rank_col_name)
+        x@tabulator_column_formatters[[col_name]] <- formatter_info$config
+      }
+
+      # Track which custom JS is needed (once per plot type)
+      if (isTRUE(formatter_info$requires_custom_js)) {
+        if (plot_type == "histogram") {
+          needs_histogram <- TRUE
+        } else if (plot_type %in% c("line", "density")) {
+          needs_sparkline <- TRUE
+        }
+      }
+    }
+  }
+
+  # Add markers for needed custom JS (once total)
+  if (needs_histogram && !grepl("NEEDS_HISTOGRAM_JS", x@tabulator_options, fixed = TRUE)) {
+    x@tabulator_options <- paste0(x@tabulator_options, "\n// NEEDS_HISTOGRAM_JS")
+  }
+  if (needs_sparkline && !grepl("NEEDS_SPARKLINE_JS", x@tabulator_options, fixed = TRUE)) {
+    x@tabulator_options <- paste0(x@tabulator_options, "\n// NEEDS_SPARKLINE_JS")
+  }
+
+  return(x)
 }

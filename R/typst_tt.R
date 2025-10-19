@@ -11,6 +11,9 @@ apply_typst_spans <- function(body, sty) {
     drop = FALSE
   ]
   if (nrow(spans) > 0) {
+    # Deduplicate spans by i, j, colspan, and rowspan to avoid applying the same span multiple times
+    # This can happen when line styles are expanded (e.g., "lt" becomes "l" and "t" entries)
+    spans <- spans[!duplicated(spans[, c("i", "j", "colspan", "rowspan")]), , drop = FALSE]
     table_nrows <- nrow(body)
     table_ncols <- ncol(body)
 
@@ -293,8 +296,9 @@ typst_build_group_header <- function(group_row) {
 
     if (span_length > 1) {
       # Multi-column span - use table.cell with colspan
+      # Note: bottom stroke is handled by style system via add_group_line_styling_simple()
       header_parts <- c(header_parts, sprintf(
-        "table.cell(stroke: (bottom: .05em + black), colspan: %s, align: center)[%s]",
+        "table.cell(colspan: %s, align: center)[%s]",
         span_length,
         current_label
       ))
