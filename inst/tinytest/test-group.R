@@ -1,6 +1,10 @@
 source("helpers.R")
 using("tinysnapshot")
 
+if (!is_local) {
+  exit_file("Run on Vincent's machine")
+}
+
 # vector row labels
 set.seed(48103)
 dat <- data.frame(
@@ -108,6 +112,18 @@ tab <- tt(data.frame(
   group_tt(j = "x")
 tab@output <- "markdown"
 expect_snapshot_print(tab, "group-delim-x-delim.md")
+
+
+
+# bug: same number of delimiters
+dat <- data.frame(
+  "A__D" = rnorm(3),
+  "A_B_D" = rnorm(3),
+  "A_B_" = rnorm(3),
+  "_C_E" = rnorm(3),
+  check.names = FALSE
+)
+tt(dat) |> group_tt(j = "_")
 
 
 # Issue #466: group_tt without delimiter returns a valid table
