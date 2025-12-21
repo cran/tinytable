@@ -3,7 +3,7 @@ Type: Package
 Title: Simple and Configurable Tables in 'HTML', 'LaTeX', 'Markdown',
         'Word', 'PNG', 'PDF', and 'Typst' Formats
 Description: Create highly customized tables with this simple and dependency-free package. Data frames can be converted to 'HTML', 'LaTeX', 'Markdown', 'Word', 'PNG', 'PDF', or 'Typst' tables. The user interface is minimalist and easy to learn. The syntax is concise. 'HTML' tables can be customized using the flexible 'Bootstrap' framework, and 'LaTeX' code with the 'tabularray' package.
-Version: 0.15.1
+Version: 0.15.2
 Imports: methods
 Depends: R (>= 4.1.0)
 Enhances: knitr
@@ -23,9 +23,9 @@ License: GPL (>= 3)
 Encoding: UTF-8
 RoxygenNote: 7.3.3
 NeedsCompilation: no
-Packaged: 2025-10-31 19:42:11 UTC; vincent
+Packaged: 2025-12-20 23:00:01 UTC; vincent
 Author: Vincent Arel-Bundock [aut, cre] (ORCID:
     <https://orcid.org/0000-0003-2042-7063>)
 Maintainer: Vincent Arel-Bundock <vincent.arel-bundock@umontreal.ca>
 Repository: CRAN
-Date/Publication: 2025-11-02 06:10:36 UTC
+Date/Publication: 2025-12-21 06:10:12 UTC

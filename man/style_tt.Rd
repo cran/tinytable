@@ -24,7 +24,7 @@ style_tt(
   rowspan = NULL,
   indent = NULL,
   line = NULL,
-  line_color = "black",
+  line_color = NULL,
   line_width = 0.1,
   line_trim = NULL,
   finalize = NULL,
@@ -50,7 +50,7 @@ tt_style(
   rowspan = NULL,
   indent = NULL,
   line = NULL,
-  line_color = "black",
+  line_color = NULL,
   line_width = 0.1,
   line_trim = NULL,
   finalize = NULL,
@@ -263,7 +263,7 @@ notes <- list(
   "*" = "Hello world", 
   "a" = "Bacon ipsum dolor amet kevin t-bone porchetta.")
 tt(head(iris), 
-   width = .5,
+   width = .8,
    caption = "This is a Caption Example.", 
    notes = notes) |>
   style_tt(2, 2, background = "pink", rowspan = 2, colspan = 2, 

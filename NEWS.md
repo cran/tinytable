@@ -1,26 +1,41 @@
 # News
 
+## 0.15.2
+
+New features:
+
+* `theme_html(css_rule)` now accepts shortcut strings "tinytable" (default) or "dark" for built-in themes
+* `theme_html(css_rule)` can now load CSS from local file paths or external URLs (http/https ending in .css)
+* New dark theme stylesheet available via `theme_html(css_rule = "dark")` optimized for dark background websites
+* Added CSS variables (`--tt-text-color`, `--tt-line-color`, `--tt-border-color`, etc.) for easier customization
+* CSS variables are now used consistently for HTML output with tinytable engine, even with custom stylesheets
+
+Bugs:
+
+* Tabulator HTML output now preserves special characters in column names like question marks (Issue #611, thanks to @etiennebacher).
+* Document `rbind2()` limitations around `format_tt()`/`style_tt()` and string coercion when stacking tables (Issue #612, thanks to @alexploner).
+* `theme_latex(environment = "tabular")` now preserves captions (Issue #613, thanks to @brueckmann).
+* LaTeX tables again respect automatic wrapping when spanning horizontal cells by propagating `tt(width = ...)` across merged columns (Issue #614, thanks to @bastienchassagnol).
+* `theme_html(css_rule)` is respected with `portable=TRUE`
+* `modelsummary` Issue 931: LaTeX preamble not automatically added. Thanks to @resulumit
+
 ## 0.15.1
 
 Bugs:
 
 * `style_tt()` with a logical matrix containing all `FALSE` values no longer throws an error (Issue #609, thanks to @EinMaulwurf).
+* Fixed spurious Windows portable HTML warning when using `height` parameter with non-HTML output formats (Issue #608).
 
 Misc:
 
 * Skip a few tests on CRAN.
-
-## 0.15.0.1
-
-Misc:
-
 * `print(tab, "html")` always base 64 encodes images. This is useful because it makes files more portable when viewed in IDEs, and because it simplifies path handling in temporary directories across operating systems.
 
-Bugs:
-
-* Fixed spurious Windows portable HTML warning when using `height` parameter with non-HTML output formats (Issue #608).
-
 ## 0.15.0
+
+Breaking change:
+
+* Order of operations changed. `group_tt()` are now applied before `style_tt()` and `format_tt()`
 
 New features:
 
