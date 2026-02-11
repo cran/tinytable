@@ -2,7 +2,7 @@
 % Please edit documentation in R/theme_default.R
 \name{theme_default}
 \alias{theme_default}
-\title{Default theme for TinyTable}
+\title{Deprecated: Use theme_tinytable() instead}
 \usage{
 theme_default(x, ...)
 }
@@ -15,5 +15,6 @@ theme_default(x, ...)
 A modified \code{tinytable} object.
 }
 \description{
-Default theme for TinyTable
+\code{theme_default()} has been renamed to \code{theme_tinytable()}. This function is
+deprecated and will be removed in a future version.
 }
